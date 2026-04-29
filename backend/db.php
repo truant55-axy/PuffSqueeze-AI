@@ -15,12 +15,21 @@ function db(): PDO
     $name = envValue('DB_NAME', 'moodle');
     $user = envValue('DB_USER', 'root');
     $pass = envValue('DB_PASSWORD', envValue('DB_PASS', ''));
-    $sslMode = strtolower((string)envValue('DB_SSL_MODE', ''));
+    $sslMode = (string)envValue('DB_SSL_MODE', '');
     $sslCa = (string)envValue('DB_SSL_CA', '');
+
+    // TiDB Serverless requires secure transport. If no CA is provided,
+    // use the common CA bundle path in Linux containers.
+    if ($sslCa === '') {
+        $sslCa = '/etc/ssl/certs/ca-certificates.crt';
+    }
 
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $name);
     if ($sslMode !== '') {
         $dsn .= ';sslmode=' . $sslMode;
+    }
+    if ($sslCa !== '') {
+        $dsn .= ';sslca=' . $sslCa;
     }
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -29,7 +38,7 @@ function db(): PDO
     if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
         $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
     }
-    if ($sslCa !== '' && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+    if (defined('PDO::MYSQL_ATTR_SSL_CA')) {
         $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
     }
 
