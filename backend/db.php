@@ -14,13 +14,24 @@ function db(): PDO
     $port = envValue('DB_PORT', '3306');
     $name = envValue('DB_NAME', 'moodle');
     $user = envValue('DB_USER', 'root');
-    $pass = envValue('DB_PASS', '');
+    $pass = envValue('DB_PASSWORD', envValue('DB_PASS', ''));
+    $sslMode = strtolower((string)envValue('DB_SSL_MODE', ''));
+    $sslCa = (string)envValue('DB_SSL_CA', '');
 
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $name);
+    if ($sslMode !== '') {
+        $dsn .= ';sslmode=' . $sslMode;
+    }
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ];
+    if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+        $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+    }
+    if ($sslCa !== '' && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+        $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+    }
 
     $pdo = new PDO($dsn, $user, $pass, $options);
     return $pdo;
