@@ -47,6 +47,12 @@ export interface ConnectPost {
   };
 }
 
+export interface UsagePayload {
+  user_id: number;
+  action_type: string;
+  action_detail?: Record<string, unknown>;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 async function parseJson(res: Response) {
@@ -171,4 +177,16 @@ export async function createConnectPost(payload: {
     body: JSON.stringify(payload),
   });
   await parseJson(res);
+}
+
+export async function logUsage(payload: UsagePayload): Promise<number> {
+  const res = await fetch(`${API_BASE}/api/usage`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(res);
+  return Number(data?.data?.id || 0);
 }
