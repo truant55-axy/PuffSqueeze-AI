@@ -4,10 +4,12 @@ import { logUsage } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
 
 export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
-  const [happiness, setHappiness] = useState(85);
+  const [happiness, setHappiness] = useState(0);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [completed, setCompleted] = useState<Record<number, boolean>>({});
+  const [routineClicks, setRoutineClicks] = useState(0);
+  const [routineLocked, setRoutineLocked] = useState(false);
   const [activeRoutine, setActiveRoutine] = useState<'breathing' | 'feeding' | null>(null);
   const [breathStepIndex, setBreathStepIndex] = useState(0);
   const [breathRemain, setBreathRemain] = useState(4);
@@ -61,7 +63,18 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
   );
 
   const handleRoutine = async (routine: (typeof routines)[number]) => {
+    if (routineLocked) {
+      setMessage('Daily routine limit reached. Please exit and re-enter Mindful Care.');
+      return;
+    }
     if (busyId !== null || completed[routine.id]) return;
+    if (routineClicks >= 3) {
+      setRoutineLocked(true);
+      setMessage('Daily routine limit reached. Please exit and re-enter Mindful Care.');
+      return;
+    }
+    setRoutineClicks((prev) => prev + 1);
+
     if (routine.id === 2) {
       setBreathStepIndex(0);
       setBreathRemain(4);
@@ -225,7 +238,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
     setSeedsFed((s) => s + 1);
     setPetMessage('Yummy. I like this snack.');
     setFeedingProgress((prev) => {
-      const next = Math.min(100, prev + 20);
+      const next = Math.min(100, prev + 8);
       if (next >= 100) {
         setFeedingCelebrating(true);
       }
@@ -236,7 +249,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
   const cleanBird = () => {
     if (feedingCelebrating) return;
     setPetMessage('I like taking shower.');
-    setCleaningProgress((prev) => Math.min(100, prev + 25));
+    setCleaningProgress((prev) => Math.min(100, prev + 10));
   };
 
   useEffect(() => {
@@ -320,7 +333,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               transition={{ delay: i * 0.1 }}
               whileHover={{ x: 10, backgroundColor: "rgba(255, 255, 255, 0.6)" }}
               onClick={() => void handleRoutine(item)}
-              disabled={busyId !== null || Boolean(completed[item.id])}
+              disabled={busyId !== null || Boolean(completed[item.id]) || routineLocked}
               className="w-full bg-white/30 backdrop-blur-md p-8 rounded-[2rem] border border-white/20 shadow-sm flex items-center gap-8 text-left transition-all"
             >
               <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
@@ -329,7 +342,11 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               <div className="flex-grow">
                 <h4 className="font-headline font-bold text-lg text-on-surface mb-1">{item.title}</h4>
                 <p className="text-sm text-on-surface-variant font-medium leading-relaxed">
-                  {completed[item.id] ? 'Completed today.' : item.desc}
+                  {routineLocked
+                    ? 'Locked. Exit and re-enter Mindful Care to reset.'
+                    : completed[item.id]
+                      ? 'Completed today.'
+                      : item.desc}
                 </p>
               </div>
               <div className="text-primary font-black text-sm">
