@@ -62,7 +62,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       setBreathCyclesDone(0);
       setActiveRoutine('breathing');
       if (!breathingAudioRef.current) {
-        const audio = new Audio('/audio/kaydream321-ocean-waves-white-noise1-13752.mp3?v=2');
+        const audio = new Audio('/audio/pianowhitesound.mp3?v=3');
         audio.loop = true;
         audio.volume = 0.5;
         audio.onplaying = () => {
@@ -167,7 +167,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
     }
 
     if (!breathingAudioRef.current) {
-      const audio = new Audio('/audio/kaydream321-ocean-waves-white-noise1-13752.mp3?v=2');
+      const audio = new Audio('/audio/pianowhitesound.mp3?v=3');
       audio.loop = true;
       audio.volume = 0.5;
       audio.onplaying = () => {
