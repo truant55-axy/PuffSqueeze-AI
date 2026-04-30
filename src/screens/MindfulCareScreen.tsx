@@ -13,8 +13,14 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
   const [breathRemain, setBreathRemain] = useState(4);
   const [breathCyclesDone, setBreathCyclesDone] = useState(0);
   const [feedingProgress, setFeedingProgress] = useState(0);
+  const [cleaningProgress, setCleaningProgress] = useState(0);
   const [seedsFed, setSeedsFed] = useState(0);
   const [feedingCelebrating, setFeedingCelebrating] = useState(false);
+  const [petMessage, setPetMessage] = useState('Tap a care action to interact with your bird.');
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [planDate, setPlanDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [planText, setPlanText] = useState('');
+  const [dailyPlans, setDailyPlans] = useState<Record<string, string>>({});
   const [breathingMuted, setBreathingMuted] = useState(false);
   const [breathingPlaying, setBreathingPlaying] = useState(false);
   const [audioHint, setAudioHint] = useState('');
@@ -88,8 +94,11 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
     }
     if (routine.id === 3) {
       setFeedingProgress(0);
+      setCleaningProgress(0);
       setSeedsFed(0);
       setFeedingCelebrating(false);
+      setPetMessage('Tap a care action to interact with your bird.');
+      setPlannerOpen(false);
       setActiveRoutine('feeding');
       return;
     }
@@ -214,6 +223,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
   const feedBird = () => {
     if (feedingCelebrating) return;
     setSeedsFed((s) => s + 1);
+    setPetMessage('Yummy. I like this snack.');
     setFeedingProgress((prev) => {
       const next = Math.min(100, prev + 20);
       if (next >= 100) {
@@ -221,6 +231,38 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       }
       return next;
     });
+  };
+
+  const cleanBird = () => {
+    if (feedingCelebrating) return;
+    setPetMessage('I like taking shower.');
+    setCleaningProgress((prev) => Math.min(100, prev + 25));
+  };
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('puffsqueeze_daily_plans');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          setDailyPlans(parsed as Record<string, string>);
+        }
+      }
+    } catch {
+      // ignore parse failures
+    }
+  }, []);
+
+  const savePlan = () => {
+    const text = planText.trim();
+    if (!planDate || text === '') return;
+    setDailyPlans((prev) => {
+      const next = { ...prev, [planDate]: text };
+      localStorage.setItem('puffsqueeze_daily_plans', JSON.stringify(next));
+      return next;
+    });
+    setPlanText('');
+    setPetMessage('Plan saved. Keep going one step at a time.');
   };
 
   useEffect(() => {
@@ -361,16 +403,21 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       {activeRoutine === 'feeding' && (
         <div className="fixed inset-0 z-[90] bg-[#f6fbf3] flex flex-col items-center justify-center px-6">
           <h3 className="text-3xl font-black text-primary mb-2">Feeding Time</h3>
-          <p className="text-on-surface-variant mb-6">
-            {feedingCelebrating ? 'Yummy. Your bird is happy.' : 'Tap to feed seeds until full.'}
+          <p className="text-on-surface-variant mb-4 text-center">
+            {feedingCelebrating ? 'Yummy. Your bird is happy.' : petMessage}
           </p>
-          <div className="w-full max-w-sm h-3 rounded-full bg-primary/15 overflow-hidden mb-8">
+          <div className="w-full max-w-sm h-3 rounded-full bg-primary/15 overflow-hidden mb-2">
             <motion.div className="h-full bg-primary" animate={{ width: `${feedingProgress}%` }} />
           </div>
+          <p className="text-xs text-on-surface-variant mb-2">Feeding {feedingProgress}%</p>
+          <div className="w-full max-w-sm h-3 rounded-full bg-sky-100 overflow-hidden mb-2">
+            <motion.div className="h-full bg-sky-500" animate={{ width: `${cleaningProgress}%` }} />
+          </div>
+          <p className="text-xs text-on-surface-variant mb-6">Cleaning {cleaningProgress}%</p>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={feedBird}
-            disabled={feedingCelebrating}
+            onClick={() => setPetMessage('I am waiting for your care actions.')}
+            disabled={false}
             className="w-56 h-56 rounded-full bg-white shadow-xl border border-primary/20 flex flex-col items-center justify-center"
           >
             <motion.div
@@ -400,10 +447,75 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               </svg>
             </motion.div>
             <span className="text-sm font-bold text-primary mt-2">
-              {feedingCelebrating ? 'Happy Bird' : 'Feed Seed'}
+              {feedingCelebrating ? 'Happy Bird' : 'Your Bird'}
             </span>
           </motion.button>
-          <p className="text-sm text-on-surface-variant mt-6">Seeds fed: {seedsFed}</p>
+          <p className="text-sm text-on-surface-variant mt-4">Seeds fed: {seedsFed}</p>
+
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={feedBird}
+              className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-bold"
+            >
+              Feeding
+            </button>
+            <button
+              type="button"
+              onClick={cleanBird}
+              className="px-4 py-2.5 rounded-xl bg-sky-500 text-white text-sm font-bold"
+            >
+              Cleaning
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlannerOpen((v) => !v)}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-bold"
+            >
+              Plan Note
+            </button>
+          </div>
+
+          {plannerOpen && (
+            <div className="mt-4 w-full max-w-md bg-white/90 border border-primary/15 rounded-2xl p-4 space-y-3">
+              <p className="text-sm font-black text-primary">Daily Planner</p>
+              <input
+                type="date"
+                value={planDate}
+                onChange={(e) => {
+                  const d = e.target.value;
+                  setPlanDate(d);
+                  setPlanText(dailyPlans[d] || '');
+                }}
+                className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
+              />
+              <textarea
+                value={planText}
+                onChange={(e) => setPlanText(e.target.value)}
+                placeholder="Write what you plan to do or what you finished today."
+                className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm min-h-[88px]"
+              />
+              <button
+                type="button"
+                onClick={savePlan}
+                className="w-full rounded-lg bg-primary text-white py-2 text-sm font-bold"
+              >
+                Save Plan
+              </button>
+              <div className="text-xs text-on-surface-variant max-h-28 overflow-auto">
+                {Object.keys(dailyPlans).length === 0 && <p>No saved plans yet.</p>}
+                {Object.entries(dailyPlans)
+                  .sort(([a], [b]) => (a < b ? 1 : -1))
+                  .slice(0, 7)
+                  .map(([date, content]) => (
+                    <p key={date} className="mb-1">
+                      {date}: {content}
+                    </p>
+                  ))}
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setActiveRoutine(null)}
