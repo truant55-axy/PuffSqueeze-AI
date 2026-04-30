@@ -137,7 +137,7 @@ export default function AISpaceScreen() {
         <section className="mb-8 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <div className="max-w-xl">
-              <h2 className="text-4xl font-serif italic text-on-surface tracking-tight">AI Space</h2>
+              <h2 className="text-4xl font-serif italic text-on-surface tracking-tight">AI Companion</h2>
               <p className="text-on-surface-variant text-sm font-medium leading-relaxed mt-1">Your digital garden for reflection.</p>
             </div>
             <motion.button 
@@ -257,7 +257,7 @@ export default function AISpaceScreen() {
               <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-lg">insights</span>
-                  <h3 className="text-lg font-black text-on-surface">AI Report</h3>
+                  <h3 className="text-lg font-black text-on-surface">AI Companion Report</h3>
                 </div>
                 <button
                   type="button"

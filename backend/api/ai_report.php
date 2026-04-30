@@ -46,7 +46,7 @@ try {
     }
 
     $prompt = sprintf(
-        "You are a wellbeing coach. Create a concise report in Chinese for this user. Metrics: today_squeezes=%d, total_squeezes=%d, current_stress=%.2f, weekly_average_squeezes=%.1f, stress_status=%s. Use user's recent questions and recent data. Output sections: 1) 最近状态概览 2) 近期提问主题 3) 风险与积极信号 4) 接下来48小时行动建议(3条). Keep it practical and specific.",
+        "You are a caring wellbeing coach writing in natural English. Create a short, warm, human-sounding report for this user. Metrics: today_squeezes=%d, total_squeezes=%d, current_stress=%.2f, weekly_average_squeezes=%.1f, stress_status=%s. Use recent questions and recent data. Output exactly 4 sections with these headings: 1) How You Seem Today 2) What You Have Been Asking About 3) Signals to Watch and Positive Signs 4) Next 8 Hours Plan (3 concrete steps). Keep it practical, empathetic, and vivid. Avoid robotic tone and avoid markdown symbols.",
         (int)$dashboard['today_squeezes'],
         (int)$dashboard['total_squeezes'],
         $stress,

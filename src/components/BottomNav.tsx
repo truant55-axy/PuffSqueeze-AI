@@ -10,7 +10,7 @@ export default function BottomNav({ activeScreen, onNavigate }: BottomNavProps) 
   const navItems: { id: Screen; label: string; icon: string }[] = [
     { id: 'home', label: 'Home', icon: 'home_max' },
     { id: 'game', label: 'Game', icon: 'sports_esports' },
-    { id: 'ai-space', label: 'AI Space', icon: 'psychology' },
+    { id: 'ai-space', label: 'AI Companion', icon: 'psychology' },
     { id: 'connect', label: 'Connect', icon: 'groups' },
   ];
 
