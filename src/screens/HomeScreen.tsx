@@ -3,13 +3,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Screen } from '../types';
 import { DashboardData, getDashboard, getProfile, recordSqueezeEvent, updateProfile } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
+import { AppLanguage, tr } from '../i18n';
 
 interface HomeScreenProps {
   onNavigate: (screen: Screen) => void;
   onLogout: () => void;
+  language: AppLanguage;
 }
 
-export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
+export default function HomeScreen({ onNavigate, onLogout, language }: HomeScreenProps) {
   const [squeezeCount, setSqueezeCount] = useState(0);
   const [sessionSqueezes, setSessionSqueezes] = useState(0);
   const [isJiggling, setIsJiggling] = useState(false);
@@ -53,7 +55,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
       lastTotalRef.current = latest.total_squeezes;
       setError('');
     } catch (e: any) {
-      setError(e?.message || 'Failed to sync squeeze data');
+      setError(e?.message || tr(language, 'Failed to sync squeeze data', '同步挤压数据失败'));
     }
 
     if (newCount === AI_THRESHOLD) {
@@ -94,7 +96,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
         lastTotalRef.current = data.total_squeezes;
       } catch (e: any) {
         if (!active) return;
-        setError(e?.message || 'Failed to load dashboard');
+        setError(e?.message || tr(language, 'Failed to load dashboard', '加载仪表盘失败'));
       } finally {
         if (active) {
           setLoading(false);
@@ -115,7 +117,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
 
   const stressValue = Math.max(0, Math.min(100, Math.round(dashboard?.current_stress ?? 0)));
   const totalSqueezes = sessionSqueezes;
-  const stressStatus = dashboard?.stress_status ?? 'No Data';
+  const stressStatus = dashboard?.stress_status ?? tr(language, 'No Data', '暂无数据');
 
   const openProfile = async () => {
     setIsProfileOpen(true);
@@ -128,7 +130,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
       setGender(profile.gender || '');
       setSignature(profile.signature || '');
     } catch (e: any) {
-      setProfileError(e?.message || 'Failed to load profile');
+      setProfileError(e?.message || tr(language, 'Failed to load profile', '加载资料失败'));
     } finally {
       setProfileLoading(false);
     }
@@ -147,7 +149,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
       });
       setIsProfileOpen(false);
     } catch (e: any) {
-      setProfileError(e?.message || 'Failed to save profile');
+      setProfileError(e?.message || tr(language, 'Failed to save profile', '保存资料失败'));
     } finally {
       setProfileSaving(false);
     }
@@ -311,12 +313,12 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
                 >
                   <div className="flex items-center gap-1.5 max-w-full">
                     <span className="material-symbols-outlined text-[10px] animate-pulse text-secondary">flash_on</span>
-                    <span>Squeeze {squeezeCount}</span>
+                    <span>{tr(language, `Squeeze ${squeezeCount}`, `按压 ${squeezeCount} 次`)}</span>
                   </div>
                   <div className="text-[8px] opacity-60 text-center leading-tight break-words">
                     {squeezeCount < AI_THRESHOLD 
-                      ? `${AI_THRESHOLD - squeezeCount} more to AI Space` 
-                      : `${GAME_THRESHOLD - squeezeCount} more to Game Mode`}
+                      ? tr(language, `${AI_THRESHOLD - squeezeCount} more to AI Space`, `再按 ${AI_THRESHOLD - squeezeCount} 次进入 AI 空间`)
+                      : tr(language, `${GAME_THRESHOLD - squeezeCount} more to Game Mode`, `再按 ${GAME_THRESHOLD - squeezeCount} 次进入游戏模式`)}
                   </div>
                 </motion.div>
               )}
@@ -418,14 +420,14 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
               <div className="bg-primary/90 text-on-primary px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-                Squeeze Me!
+                {tr(language, 'Squeeze Me!', '按我一下')}
               </div>
             </motion.div>
           </motion.div>
 
           <div className="bg-surface-container-lowest/80 backdrop-blur px-6 py-2 rounded-full flex items-center gap-2 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Live: Bode Bird Core</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">{tr(language, 'Live: Bode Bird Core', '实时：Bode 鸟核心')}</span>
           </div>
         </motion.section>
 
@@ -445,8 +447,8 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
           className="grid grid-cols-1 gap-6"
         >
           {[
-            { id: 'mindful-care', icon: 'eco', title: 'Mindful Care', desc: 'Daily care routines to maintain bird happiness.', color: 'text-secondary bg-secondary-container/20' },
-            { id: 'connect', icon: 'forum', title: 'Community', desc: 'Connect with other Sanctuary keepers globally.', color: 'text-tertiary bg-tertiary-container/20' }
+            { id: 'mindful-care', icon: 'eco', title: tr(language, 'Mindful Care', '正念陪伴'), desc: tr(language, 'Daily care routines to maintain bird happiness.', '每日互动，提升小鸟幸福感。'), color: 'text-secondary bg-secondary-container/20' },
+            { id: 'connect', icon: 'forum', title: tr(language, 'Community', '社区'), desc: tr(language, 'Connect with other Sanctuary keepers globally.', '和其他用户分享你的状态与心情。'), color: 'text-tertiary bg-tertiary-container/20' }
           ].map((item, i) => (
             <motion.button 
               key={i}
@@ -475,7 +477,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
             </motion.button>
           ))}
         </motion.div>
-        {loading && <p className="text-xs text-on-surface-variant">Loading live metrics...</p>}
+        {loading && <p className="text-xs text-on-surface-variant">{tr(language, 'Loading live metrics...', '正在加载实时数据...')}</p>}
         {error && <p className="text-xs text-red-600">{error}</p>}
       </main>
 
@@ -493,7 +495,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
         <div className="fixed inset-0 z-[80] bg-black/35 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-white/40 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-on-surface">Edit Profile</h3>
+              <h3 className="text-lg font-black text-on-surface">{tr(language, 'Edit Profile', '编辑资料')}</h3>
               <button
                 type="button"
                 onClick={() => setIsProfileOpen(false)}
@@ -504,11 +506,11 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
             </div>
 
             {profileLoading ? (
-              <p className="text-sm text-on-surface-variant">Loading profile...</p>
+              <p className="text-sm text-on-surface-variant">{tr(language, 'Loading profile...', '正在加载资料...')}</p>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-bold text-on-surface-variant">Name</label>
+                  <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Name', '姓名')}</label>
                   <input
                     className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
                     value={displayName}
@@ -516,7 +518,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-on-surface-variant">Age</label>
+                  <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Age', '年龄')}</label>
                   <input
                     className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
                     value={ageInput}
@@ -527,16 +529,16 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-on-surface-variant">Gender</label>
+                  <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Gender', '性别')}</label>
                   <input
                     className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    placeholder="e.g. Male / Female / Non-binary"
+                    placeholder={tr(language, 'e.g. Male / Female / Non-binary', '例如：男 / 女 / 其他')}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-on-surface-variant">Signature</label>
+                  <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Signature', '个性签名')}</label>
                   <textarea
                     className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm min-h-[84px]"
                     value={signature}
@@ -552,7 +554,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
                     onClick={() => void saveProfile()}
                     disabled={profileSaving}
                   >
-                    {profileSaving ? 'Saving...' : 'Save'}
+                    {profileSaving ? tr(language, 'Saving...', '保存中...') : tr(language, 'Save', '保存')}
                   </button>
                   <button
                     type="button"
@@ -562,7 +564,7 @@ export default function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
                       onLogout();
                     }}
                   >
-                    Logout
+                    {tr(language, 'Logout', '退出登录')}
                   </button>
                 </div>
               </div>

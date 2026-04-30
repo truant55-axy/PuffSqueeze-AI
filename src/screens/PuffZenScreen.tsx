@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
+import { AppLanguage, tr } from '../i18n';
 
-export default function PuffZenScreen({ onBack }: { onBack: () => void }) {
+export default function PuffZenScreen({ onBack, language }: { onBack: () => void; language: AppLanguage }) {
   return (
     <div className="h-screen w-screen bg-black flex flex-col relative z-20">
       <header className="h-14 shrink-0 bg-black/70 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4">
@@ -22,7 +23,7 @@ export default function PuffZenScreen({ onBack }: { onBack: () => void }) {
           rel="noreferrer"
           className="text-xs px-3 py-1.5 rounded-full border border-white/30 text-white/90"
         >
-          Open New Tab
+          {tr(language, 'Open New Tab', '新标签页打开')}
         </motion.a>
       </header>
 
@@ -37,4 +38,3 @@ export default function PuffZenScreen({ onBack }: { onBack: () => void }) {
     </div>
   );
 }
-

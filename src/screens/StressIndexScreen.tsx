@@ -11,10 +11,11 @@ import {
 } from 'recharts';
 import { DashboardData, getAiSuggestion, getDashboard } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
+import { AppLanguage, tr } from '../i18n';
 
-export default function StressIndexScreen({ onBack }: { onBack: () => void }) {
+export default function StressIndexScreen({ onBack, language }: { onBack: () => void; language: AppLanguage }) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [suggestion, setSuggestion] = useState('Loading AI suggestion...');
+  const [suggestion, setSuggestion] = useState(tr(language, 'Loading AI suggestion...', '正在加载 AI 建议...'));
   const [error, setError] = useState('');
   const userId = getCurrentUserId();
 
@@ -29,8 +30,8 @@ export default function StressIndexScreen({ onBack }: { onBack: () => void }) {
         setSuggestion(aiText);
         setError('');
       } catch (e: any) {
-        setError(e?.message || 'Failed to load stress data');
-        setSuggestion('Temporarily unavailable. Please try again.');
+        setError(e?.message || tr(language, 'Failed to load stress data', '加载压力数据失败'));
+        setSuggestion(tr(language, 'Temporarily unavailable. Please try again.', '暂时不可用，请稍后重试。'));
       }
     };
     load();
@@ -38,7 +39,7 @@ export default function StressIndexScreen({ onBack }: { onBack: () => void }) {
 
   const stressData = dashboard?.weekly ?? [];
   const stressValue = Math.max(0, Math.min(100, Math.round(dashboard?.current_stress ?? 0)));
-  const stressStatus = dashboard?.stress_status ?? 'No Data';
+  const stressStatus = dashboard?.stress_status ?? tr(language, 'No Data', '暂无数据');
 
   return (
     <div className="min-h-screen pb-24 relative z-10 bg-background/30 font-sans">
@@ -62,8 +63,8 @@ export default function StressIndexScreen({ onBack }: { onBack: () => void }) {
 
       <main className="pt-24 px-6 max-w-2xl mx-auto w-full">
         <section className="mb-12">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 mb-2">Mental Health</h2>
-          <h3 className="text-4xl font-serif italic text-on-surface tracking-tight">Anxiety Levels</h3>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 mb-2">{tr(language, 'Mental Health', '心理健康')}</h2>
+          <h3 className="text-4xl font-serif italic text-on-surface tracking-tight">{tr(language, 'Anxiety Levels', '焦虑指数')}</h3>
         </section>
 
         <motion.div
@@ -159,4 +160,3 @@ export default function StressIndexScreen({ onBack }: { onBack: () => void }) {
     </div>
   );
 }
-

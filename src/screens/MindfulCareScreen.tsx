@@ -2,8 +2,9 @@ import { motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { logUsage } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
+import { AppLanguage, tr } from '../i18n';
 
-export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
+export default function MindfulCareScreen({ onBack, language }: { onBack: () => void; language: AppLanguage }) {
   const [happiness, setHappiness] = useState(0);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [message, setMessage] = useState('');
@@ -18,7 +19,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
   const [cleaningProgress, setCleaningProgress] = useState(0);
   const [seedsFed, setSeedsFed] = useState(0);
   const [feedingCelebrating, setFeedingCelebrating] = useState(false);
-  const [petMessage, setPetMessage] = useState('Tap a care action to interact with your bird.');
+  const [petMessage, setPetMessage] = useState(tr(language, 'Tap a care action to interact with your bird.', '点击一个互动按钮陪陪小鸟吧。'));
   const [plannerOpen, setPlannerOpen] = useState(false);
   const [planDate, setPlanDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [planText, setPlanText] = useState('');
@@ -34,43 +35,43 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       {
         id: 1,
         key: 'mindful_gentle_stroke',
-        title: 'Gentle Stroke',
+        title: tr(language, 'Gentle Stroke', '轻抚互动'),
         icon: 'back_hand',
-        desc: 'Soothe the bird with soft touches.',
+        desc: tr(language, 'Soothe the bird with soft touches.', '用轻柔互动安抚小鸟。'),
         energy: 5,
-        doneText: 'Gentle Stroke completed. Your bird calmed down.',
+        doneText: tr(language, 'Gentle Stroke completed. Your bird calmed down.', '轻抚完成，小鸟平静下来了。'),
       },
       {
         id: 2,
         key: 'mindful_deep_breathing',
-        title: 'Deep Breathing',
+        title: tr(language, 'Deep Breathing', '深呼吸'),
         icon: 'air',
-        desc: 'Sync your breath with the bird.',
+        desc: tr(language, 'Sync your breath with the bird.', '跟随小鸟节奏呼吸。'),
         energy: 15,
-        doneText: 'Deep Breathing completed. Rhythm is now steady.',
+        doneText: tr(language, 'Deep Breathing completed. Rhythm is now steady.', '深呼吸完成，节奏稳定了。'),
       },
       {
         id: 3,
         key: 'mindful_feeding_time',
-        title: 'Feeding Time',
+        title: tr(language, 'Feeding Time', '喂食时间'),
         icon: 'eco',
-        desc: 'Provide organic digital seeds.',
+        desc: tr(language, 'Provide organic digital seeds.', '喂小鸟健康能量种子。'),
         energy: 10,
-        doneText: 'Feeding Time completed. Energy reserves restored.',
+        doneText: tr(language, 'Feeding Time completed. Energy reserves restored.', '喂食完成，能量恢复。'),
       },
     ],
-    []
+    [language]
   );
 
   const handleRoutine = async (routine: (typeof routines)[number]) => {
     if (routineLocked) {
-      setMessage('Daily routine limit reached. Please exit and re-enter Mindful Care.');
+      setMessage(tr(language, 'Daily routine limit reached. Please exit and re-enter Mindful Care.', '今日互动次数已用完，请退出后重新进入。'));
       return;
     }
     if (busyId !== null || completed[routine.id]) return;
     if (routineClicks >= 3) {
       setRoutineLocked(true);
-      setMessage('Daily routine limit reached. Please exit and re-enter Mindful Care.');
+      setMessage(tr(language, 'Daily routine limit reached. Please exit and re-enter Mindful Care.', '今日互动次数已用完，请退出后重新进入。'));
       return;
     }
     setRoutineClicks((prev) => prev + 1);
@@ -86,12 +87,12 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
         audio.volume = 0.5;
         audio.onplaying = () => {
           setBreathingPlaying(true);
-          setAudioHint('Music playing');
+          setAudioHint(tr(language, 'Music playing', '音乐播放中'));
         };
         audio.onpause = () => setBreathingPlaying(false);
         audio.onerror = () => {
           setBreathingPlaying(false);
-          setAudioHint('Audio load failed');
+          setAudioHint(tr(language, 'Audio load failed', '音频加载失败'));
         };
         breathingAudioRef.current = audio;
       }
@@ -100,7 +101,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       const playPromise = breathingAudioRef.current.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
-          setAudioHint('Tap Play Music to start audio');
+          setAudioHint(tr(language, 'Tap Play Music to start audio', '点击“播放音乐”开始'));
         });
       }
       return;
@@ -138,7 +139,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       setCompleted((prev) => ({ ...prev, [routine.id]: true }));
       setMessage(routine.doneText);
     } catch (e: any) {
-      setMessage(e?.message || 'Action failed, please try again.');
+      setMessage(e?.message || tr(language, 'Action failed, please try again.', '操作失败，请重试。'));
     } finally {
       setBusyId(null);
     }
@@ -194,12 +195,12 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       audio.volume = 0.5;
       audio.onplaying = () => {
         setBreathingPlaying(true);
-        setAudioHint('Music playing');
+          setAudioHint(tr(language, 'Music playing', '音乐播放中'));
       };
       audio.onpause = () => setBreathingPlaying(false);
       audio.onerror = () => {
         setBreathingPlaying(false);
-        setAudioHint('Audio load failed');
+          setAudioHint(tr(language, 'Audio load failed', '音频加载失败'));
       };
       breathingAudioRef.current = audio;
     }
@@ -236,7 +237,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
   const feedBird = () => {
     if (feedingCelebrating) return;
     setSeedsFed((s) => s + 1);
-    setPetMessage('Yummy. I like this snack.');
+    setPetMessage(tr(language, 'Yummy. I like this snack.', '真好吃，我喜欢这个零食。'));
     setFeedingProgress((prev) => {
       const next = Math.min(100, prev + 8);
       if (next >= 100) {
@@ -248,7 +249,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
 
   const cleanBird = () => {
     if (feedingCelebrating) return;
-    setPetMessage('I like taking shower.');
+    setPetMessage(tr(language, 'I like taking shower.', '我喜欢洗澡，清清爽爽。'));
     setCleaningProgress((prev) => Math.min(100, prev + 10));
   };
 
@@ -275,7 +276,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
       return next;
     });
     setPlanText('');
-    setPetMessage('Plan saved. Keep going one step at a time.');
+    setPetMessage(tr(language, 'Plan saved. Keep going one step at a time.', '计划已保存，继续一步一步来。'));
   };
 
   useEffect(() => {
@@ -298,7 +299,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
           <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all">
             <span className="material-symbols-outlined text-primary">arrow_back</span>
           </button>
-          <h1 className="text-2xl font-bold text-primary font-headline tracking-tight">Mindful Care</h1>
+          <h1 className="text-2xl font-bold text-primary font-headline tracking-tight">{tr(language, 'Mindful Care', '正念陪伴')}</h1>
         </div>
       </header>
 
@@ -316,15 +317,15 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               className="h-full bg-primary"
             />
           </div>
-          <h2 className="text-3xl font-serif italic text-on-surface mb-2">Bird Happiness</h2>
+          <h2 className="text-3xl font-serif italic text-on-surface mb-2">{tr(language, 'Bird Happiness', '小鸟幸福值')}</h2>
           <div className="text-6xl font-headline font-black text-primary mb-4">{happiness}%</div>
-          <p className="text-on-surface-variant font-medium">Your companion is feeling peaceful today.</p>
+          <p className="text-on-surface-variant font-medium">{tr(language, 'Your companion is feeling peaceful today.', '你的伙伴今天很平静。')}</p>
           {message && <p className="text-sm text-primary font-semibold mt-3">{message}</p>}
         </motion.section>
 
         {/* Interaction Routines */}
         <div className="space-y-6">
-          <h3 className="text-xl font-serif italic text-on-surface px-4">Daily Routines</h3>
+          <h3 className="text-xl font-serif italic text-on-surface px-4">{tr(language, 'Daily Routines', '每日互动')}</h3>
           {routines.map((item, i) => (
             <motion.button 
               key={item.id}
@@ -343,14 +344,14 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
                 <h4 className="font-headline font-bold text-lg text-on-surface mb-1">{item.title}</h4>
                 <p className="text-sm text-on-surface-variant font-medium leading-relaxed">
                   {routineLocked
-                    ? 'Locked. Exit and re-enter Mindful Care to reset.'
+                    ? tr(language, 'Locked. Exit and re-enter Mindful Care to reset.', '已锁定，退出并重新进入可重置。')
                     : completed[item.id]
-                      ? 'Completed today.'
+                      ? tr(language, 'Completed today.', '今日已完成')
                       : item.desc}
                 </p>
               </div>
               <div className="text-primary font-black text-sm">
-                {completed[item.id] ? 'Done' : `+${item.energy}`}
+                {completed[item.id] ? tr(language, 'Done', '完成') : `+${item.energy}`}
               </div>
             </motion.button>
           ))}
@@ -359,8 +360,8 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
 
       {activeRoutine === 'breathing' && (
         <div className="fixed inset-0 z-[90] bg-[#eaf4fa] flex flex-col items-center justify-center px-6">
-          <h3 className="text-3xl font-black text-primary mb-2">Deep Breathing</h3>
-          <p className="text-on-surface-variant mb-8">Follow the guide. Complete 3 cycles.</p>
+          <h3 className="text-3xl font-black text-primary mb-2">{tr(language, 'Deep Breathing', '深呼吸')}</h3>
+          <p className="text-on-surface-variant mb-8">{tr(language, 'Follow the guide. Complete 3 cycles.', '跟随引导完成 3 轮呼吸。')}</p>
           <motion.div
             animate={{ scale: currentBreathStep.scale }}
             transition={{ duration: 1, ease: 'easeInOut' }}
@@ -371,7 +372,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               <p className="text-xl font-bold text-on-surface mt-2">{breathRemain}s</p>
             </div>
           </motion.div>
-          <p className="text-sm font-semibold text-on-surface-variant mb-8">Cycle {Math.min(3, breathCyclesDone + 1)} / 3</p>
+          <p className="text-sm font-semibold text-on-surface-variant mb-8">{tr(language, 'Cycle', '第')} {Math.min(3, breathCyclesDone + 1)} / 3</p>
           {audioHint && <p className="text-xs text-primary mb-3">{audioHint}</p>}
           <button
             type="button"
@@ -380,16 +381,16 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               if (!audio) return;
               if (breathingPlaying) {
                 audio.pause();
-                setAudioHint('Music paused');
+                setAudioHint(tr(language, 'Music paused', '音乐已暂停'));
                 return;
               }
               void audio.play().catch(() => {
-                setAudioHint('Play blocked, tap again');
+                setAudioHint(tr(language, 'Play blocked, tap again', '播放被拦截，请再点一次'));
               });
             }}
             className="mb-3 px-6 py-3 rounded-full bg-primary text-white font-bold"
           >
-            {breathingPlaying ? 'Pause Music' : 'Play Music'}
+            {breathingPlaying ? tr(language, 'Pause Music', '暂停音乐') : tr(language, 'Play Music', '播放音乐')}
           </button>
           <button
             type="button"
@@ -405,23 +406,23 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
             }}
             className="mb-4 px-6 py-3 rounded-full bg-white border border-primary/20 text-primary font-bold"
           >
-            {breathingMuted ? 'Unmute Music' : 'Mute Music'}
+            {breathingMuted ? tr(language, 'Unmute Music', '取消静音') : tr(language, 'Mute Music', '静音')}
           </button>
           <button
             type="button"
             onClick={() => setActiveRoutine(null)}
             className="px-6 py-3 rounded-full border border-primary/30 text-primary font-bold"
           >
-            Exit
+            {tr(language, 'Exit', '退出')}
           </button>
         </div>
       )}
 
       {activeRoutine === 'feeding' && (
         <div className="fixed inset-0 z-[90] bg-[#f6fbf3] flex flex-col items-center justify-center px-6">
-          <h3 className="text-3xl font-black text-primary mb-2">Feeding Time</h3>
+          <h3 className="text-3xl font-black text-primary mb-2">{tr(language, 'Feeding Time', '喂食时间')}</h3>
           <p className="text-on-surface-variant mb-4 text-center">
-            {feedingCelebrating ? 'Yummy. Your bird is happy.' : petMessage}
+            {feedingCelebrating ? tr(language, 'Yummy. Your bird is happy.', '小鸟吃得很开心。') : petMessage}
           </p>
           <div className="w-full max-w-sm h-3 rounded-full bg-primary/15 overflow-hidden mb-2">
             <motion.div className="h-full bg-primary" animate={{ width: `${feedingProgress}%` }} />
@@ -464,10 +465,10 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               </svg>
             </motion.div>
             <span className="text-sm font-bold text-primary mt-2">
-              {feedingCelebrating ? 'Happy Bird' : 'Your Bird'}
+              {feedingCelebrating ? tr(language, 'Happy Bird', '开心小鸟') : tr(language, 'Your Bird', '你的小鸟')}
             </span>
           </motion.button>
-          <p className="text-sm text-on-surface-variant mt-4">Seeds fed: {seedsFed}</p>
+          <p className="text-sm text-on-surface-variant mt-4">{tr(language, 'Seeds fed', '已喂食次数')}: {seedsFed}</p>
 
           <div className="mt-4 flex items-center gap-3">
             <button
@@ -475,27 +476,27 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               onClick={feedBird}
               className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-bold"
             >
-              Feeding
+              {tr(language, 'Feeding', '喂食')}
             </button>
             <button
               type="button"
               onClick={cleanBird}
               className="px-4 py-2.5 rounded-xl bg-sky-500 text-white text-sm font-bold"
             >
-              Cleaning
+              {tr(language, 'Cleaning', '清洁')}
             </button>
             <button
               type="button"
               onClick={() => setPlannerOpen((v) => !v)}
               className="px-4 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-bold"
             >
-              Plan Note
+              {tr(language, 'Plan Note', '计划便签')}
             </button>
           </div>
 
           {plannerOpen && (
             <div className="mt-4 w-full max-w-md bg-white/90 border border-primary/15 rounded-2xl p-4 space-y-3">
-              <p className="text-sm font-black text-primary">Daily Planner</p>
+              <p className="text-sm font-black text-primary">{tr(language, 'Daily Planner', '每日计划')}</p>
               <input
                 type="date"
                 value={planDate}
@@ -509,7 +510,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
               <textarea
                 value={planText}
                 onChange={(e) => setPlanText(e.target.value)}
-                placeholder="Write what you plan to do or what you finished today."
+                placeholder={tr(language, 'Write what you plan to do or what you finished today.', '写下今天计划做的事或已完成内容。')}
                 className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm min-h-[88px]"
               />
               <button
@@ -517,10 +518,10 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
                 onClick={savePlan}
                 className="w-full rounded-lg bg-primary text-white py-2 text-sm font-bold"
               >
-                Save Plan
+                {tr(language, 'Save Plan', '保存计划')}
               </button>
               <div className="text-xs text-on-surface-variant max-h-28 overflow-auto">
-                {Object.keys(dailyPlans).length === 0 && <p>No saved plans yet.</p>}
+                {Object.keys(dailyPlans).length === 0 && <p>{tr(language, 'No saved plans yet.', '还没有保存的计划。')}</p>}
                 {Object.entries(dailyPlans)
                   .sort(([a], [b]) => (a < b ? 1 : -1))
                   .slice(0, 7)
@@ -538,7 +539,7 @@ export default function MindfulCareScreen({ onBack }: { onBack: () => void }) {
             onClick={() => setActiveRoutine(null)}
             className="mt-8 px-6 py-3 rounded-full border border-primary/30 text-primary font-bold"
           >
-            Exit
+            {tr(language, 'Exit', '退出')}
           </button>
         </div>
       )}

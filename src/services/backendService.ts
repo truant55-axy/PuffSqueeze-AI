@@ -95,8 +95,8 @@ export async function getAiSuggestion(userId: number): Promise<string> {
   return data.data.suggestion as string;
 }
 
-export async function getAiReport(userId: number): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/ai/report?user_id=${userId}`);
+export async function getAiReport(userId: number, lang: 'en' | 'zh' = 'en'): Promise<string> {
+  const res = await fetch(`${API_BASE}/api/ai/report?user_id=${userId}&lang=${lang}`);
   const data = await parseJson(res);
   return data.data.report as string;
 }

@@ -1,17 +1,19 @@
 import { motion } from 'motion/react';
 import { Screen } from '../types';
+import { AppLanguage, tr } from '../i18n';
 
 interface BottomNavProps {
   activeScreen: Screen;
   onNavigate: (screen: Screen) => void;
+  language: AppLanguage;
 }
 
-export default function BottomNav({ activeScreen, onNavigate }: BottomNavProps) {
+export default function BottomNav({ activeScreen, onNavigate, language }: BottomNavProps) {
   const navItems: { id: Screen; label: string; icon: string }[] = [
-    { id: 'home', label: 'Home', icon: 'home_max' },
-    { id: 'game', label: 'Game', icon: 'sports_esports' },
-    { id: 'ai-space', label: 'AI Companion', icon: 'psychology' },
-    { id: 'connect', label: 'Connect', icon: 'groups' },
+    { id: 'home', label: tr(language, 'Home', '主页'), icon: 'home_max' },
+    { id: 'game', label: tr(language, 'Game', '游戏'), icon: 'sports_esports' },
+    { id: 'ai-space', label: tr(language, 'AI Companion', 'AI陪伴'), icon: 'psychology' },
+    { id: 'connect', label: tr(language, 'Connect', '动态'), icon: 'groups' },
   ];
 
   return (

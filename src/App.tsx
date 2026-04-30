@@ -12,8 +12,10 @@ import StressIndexScreen from './screens/StressIndexScreen';
 import BottomNav from './components/BottomNav';
 import { Screen } from './types';
 import { clearCurrentUserId, hasCurrentUserId } from './services/session';
+import { AppLanguage } from './i18n';
 
 const SCREEN_KEY = 'puffsqueeze_current_screen';
+const LANG_KEY = 'puffsqueeze_language';
 
 function isValidScreen(value: string | null): value is Screen {
   return value === 'auth'
@@ -29,6 +31,10 @@ function isValidScreen(value: string | null): value is Screen {
 }
 
 export default function App() {
+  const [language, setLanguage] = useState<AppLanguage>(() => {
+    const saved = localStorage.getItem(LANG_KEY);
+    return saved === 'zh' ? 'zh' : 'en';
+  });
   const [currentScreen, setCurrentScreen] = useState<Screen>(() => {
     const saved = localStorage.getItem(SCREEN_KEY);
     const loggedIn = hasCurrentUserId();
@@ -41,6 +47,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(SCREEN_KEY, currentScreen);
   }, [currentScreen]);
+
+  useEffect(() => {
+    localStorage.setItem(LANG_KEY, language);
+  }, [language]);
 
   const handleLogin = () => {
     setCurrentScreen('home');
@@ -66,24 +76,33 @@ export default function App() {
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
           className="flex-grow"
         >
-          {currentScreen === 'auth' && <AuthScreen onLogin={handleLogin} />}
-          {currentScreen === 'home' && <HomeScreen onNavigate={setCurrentScreen} onLogout={handleLogout} />}
-          {currentScreen === 'game' && <GameScreen onNavigate={setCurrentScreen} />}
-          {currentScreen === 'puff-zen' && <PuffZenScreen onBack={() => setCurrentScreen('game')} />}
-          {currentScreen === 'mindful-care' && <MindfulCareScreen onBack={() => setCurrentScreen('home')} />}
-          {currentScreen === 'ai-space' && <AISpaceScreen />}
-          {currentScreen === 'connect' && <ConnectScreen />}
-          {currentScreen === 'stats' && <StatsScreen onBack={() => setCurrentScreen('home')} />}
-          {currentScreen === 'stress-index' && <StressIndexScreen onBack={() => setCurrentScreen('home')} />}
+          {currentScreen === 'auth' && <AuthScreen onLogin={handleLogin} language={language} />}
+          {currentScreen === 'home' && <HomeScreen onNavigate={setCurrentScreen} onLogout={handleLogout} language={language} />}
+          {currentScreen === 'game' && <GameScreen onNavigate={setCurrentScreen} language={language} />}
+          {currentScreen === 'puff-zen' && <PuffZenScreen onBack={() => setCurrentScreen('game')} language={language} />}
+          {currentScreen === 'mindful-care' && <MindfulCareScreen onBack={() => setCurrentScreen('home')} language={language} />}
+          {currentScreen === 'ai-space' && <AISpaceScreen language={language} />}
+          {currentScreen === 'connect' && <ConnectScreen language={language} />}
+          {currentScreen === 'stats' && <StatsScreen onBack={() => setCurrentScreen('home')} language={language} />}
+          {currentScreen === 'stress-index' && <StressIndexScreen onBack={() => setCurrentScreen('home')} language={language} />}
         </motion.main>
       </AnimatePresence>
+
+      <button
+        type="button"
+        onClick={() => setLanguage((prev) => (prev === 'en' ? 'zh' : 'en'))}
+        className="fixed top-4 right-4 z-[130] px-4 py-2 rounded-full bg-white/85 backdrop-blur border border-primary/20 text-primary text-xs font-black"
+      >
+        {language === 'en' ? 'English' : '中文'}
+      </button>
 
       {currentScreen !== 'auth' && 
        currentScreen !== 'mindful-care' &&
        currentScreen !== 'puff-zen' && (
         <BottomNav 
           activeScreen={currentScreen} 
-          onNavigate={setCurrentScreen} 
+          onNavigate={setCurrentScreen}
+          language={language}
         />
       )}
     </div>

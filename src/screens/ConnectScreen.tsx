@@ -3,23 +3,24 @@ import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import ProfileAvatarMenu from '../components/ProfileAvatarMenu';
 import { createConnectPost, getConnectPosts, ConnectPost } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
+import { AppLanguage, tr } from '../i18n';
 
-function formatRelativeTime(dateString: string): string {
+function formatRelativeTime(dateString: string, language: AppLanguage): string {
   const target = new Date(dateString).getTime();
   if (Number.isNaN(target)) {
     return dateString;
   }
   const diff = Date.now() - target;
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return tr(language, 'Just now', '刚刚');
+  if (minutes < 60) return tr(language, `${minutes} min ago`, `${minutes} 分钟前`);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (hours < 24) return tr(language, `${hours} hour${hours > 1 ? 's' : ''} ago`, `${hours} 小时前`);
   const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? 's' : ''} ago`;
+  return tr(language, `${days} day${days > 1 ? 's' : ''} ago`, `${days} 天前`);
 }
 
-export default function ConnectScreen() {
+export default function ConnectScreen({ language }: { language: AppLanguage }) {
   const userId = getCurrentUserId();
   const [posts, setPosts] = useState<ConnectPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,7 @@ export default function ConnectScreen() {
       setPosts(data);
       setError('');
     } catch (e: any) {
-      setError(e?.message || 'Failed to load posts');
+      setError(e?.message || tr(language, 'Failed to load posts', '加载动态失败'));
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,7 @@ export default function ConnectScreen() {
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     if (!isImage && !isVideo) {
-      setError('Only image or video files are supported');
+      setError(tr(language, 'Only image or video files are supported', '仅支持图片或视频文件'));
       return;
     }
 
@@ -96,7 +97,7 @@ export default function ConnectScreen() {
       clearMedia();
       await loadPosts();
     } catch (e: any) {
-      setError(e?.message || 'Failed to publish post');
+      setError(e?.message || tr(language, 'Failed to publish post', '发布失败'));
     } finally {
       setPublishing(false);
     }
@@ -110,14 +111,14 @@ export default function ConnectScreen() {
             <span className="material-symbols-outlined text-primary text-2xl">waves</span>
             <h1 className="text-xl font-bold text-primary font-headline tracking-tight">PuffSqueeze Connect</h1>
           </div>
-          <ProfileAvatarMenu userId={userId} sizeClassName="w-10 h-10" />
+          <ProfileAvatarMenu userId={userId} sizeClassName="w-10 h-10" language={language} />
         </div>
       </header>
 
       <main className="pt-24 px-4 max-w-2xl mx-auto">
         <section className="mb-10 pt-4">
-          <h2 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">Mood Tree-hole</h2>
-          <p className="text-on-surface-variant/80 text-sm font-medium">A sanctuary for your thoughts. Share what is in your heart.</p>
+          <h2 className="text-4xl font-headline font-black text-on-surface tracking-tight mb-2">{tr(language, 'Mood Tree-hole', '心情树洞')}</h2>
+          <p className="text-on-surface-variant/80 text-sm font-medium">{tr(language, 'A sanctuary for your thoughts. Share what is in your heart.', '这里是你的情绪角落，写下今天的心情。')}</p>
         </section>
 
         <section className="mb-12 bg-white/40 backdrop-blur-md rounded-[2rem] p-6 border border-white/20 shadow-sm">
@@ -130,7 +131,7 @@ export default function ConnectScreen() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 className="w-full bg-transparent border-none focus:ring-0 outline-none text-lg font-medium placeholder:text-outline/50 p-0 min-h-[80px] resize-none"
-                placeholder="What are you feeling right now?"
+                placeholder={tr(language, 'What are you feeling right now?', '你现在的感受是什么？')}
               />
 
               {mediaData !== '' && (
@@ -163,7 +164,7 @@ export default function ConnectScreen() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="p-2 rounded-xl h-10 w-10 flex items-center justify-center hover:bg-white/40 transition-colors text-primary/70"
-                    title="Add image or video"
+                    title={tr(language, 'Add image or video', '添加图片或视频')}
                   >
                     <span className="material-symbols-outlined text-xl">perm_media</span>
                   </button>
@@ -174,7 +175,7 @@ export default function ConnectScreen() {
                   disabled={publishing || (!text.trim() && mediaType === 'none')}
                   className="bg-primary text-on-primary font-bold px-8 py-3 rounded-full disabled:opacity-50 transition-all text-sm"
                 >
-                  {publishing ? 'Publishing...' : 'Publish'}
+                  {publishing ? tr(language, 'Publishing...', '发布中...') : tr(language, 'Publish', '发布')}
                 </button>
               </div>
               {error && <p className="text-xs text-red-600 mt-3">{error}</p>}
@@ -183,7 +184,7 @@ export default function ConnectScreen() {
         </section>
 
         {loading ? (
-          <p className="text-sm text-on-surface-variant">Loading posts...</p>
+          <p className="text-sm text-on-surface-variant">{tr(language, 'Loading posts...', '正在加载动态...')}</p>
         ) : (
           <div className="space-y-6">
             {posts.map((post) => (
@@ -201,7 +202,7 @@ export default function ConnectScreen() {
                     <div>
                       <h3 className="font-bold text-on-surface text-sm">{post.author.name}</h3>
                       <span className="text-[10px] text-on-surface-variant/60 font-bold uppercase tracking-wider">
-                        {formatRelativeTime(post.published_at)}
+                        {formatRelativeTime(post.published_at, language)}
                       </span>
                     </div>
                   </div>
@@ -232,4 +233,3 @@ export default function ConnectScreen() {
     </div>
   );
 }
-

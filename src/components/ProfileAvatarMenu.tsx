@@ -3,17 +3,20 @@ import { getProfile, updateProfile } from '../services/backendService';
 import { clearCurrentUserId } from '../services/session';
 import { AnimatePresence, motion } from 'motion/react';
 import { createPortal } from 'react-dom';
+import { AppLanguage, tr } from '../i18n';
 
 interface ProfileAvatarMenuProps {
   userId: number;
   sizeClassName?: string;
   onLogout?: () => void;
+  language?: AppLanguage;
 }
 
 export default function ProfileAvatarMenu({
   userId,
   sizeClassName = 'w-8 h-8',
   onLogout,
+  language = 'en',
 }: ProfileAvatarMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,7 +52,7 @@ export default function ProfileAvatarMenu({
       setGender(p.gender || '');
       setSignature(p.signature || '');
     } catch (e: any) {
-      setError(e?.message || 'Failed to load profile');
+      setError(e?.message || tr(language, 'Failed to load profile', '加载资料失败'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +71,7 @@ export default function ProfileAvatarMenu({
       });
       setIsOpen(false);
     } catch (e: any) {
-      setError(e?.message || 'Failed to save profile');
+      setError(e?.message || tr(language, 'Failed to save profile', '保存资料失败'));
     } finally {
       setSaving(false);
     }
@@ -114,7 +117,7 @@ export default function ProfileAvatarMenu({
                 className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-white/40 max-h-[86vh] overflow-hidden"
               >
                 <div className="px-6 pt-6 pb-4 border-b border-black/5 flex items-center justify-between">
-                  <h3 className="text-lg font-black text-on-surface">Edit Profile</h3>
+                  <h3 className="text-lg font-black text-on-surface">{tr(language, 'Edit Profile', '编辑资料')}</h3>
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
@@ -126,11 +129,11 @@ export default function ProfileAvatarMenu({
 
                 <div className="px-6 py-4 overflow-y-auto max-h-[calc(86vh-76px)]">
                   {loading ? (
-                    <p className="text-sm text-on-surface-variant">Loading profile...</p>
+                    <p className="text-sm text-on-surface-variant">{tr(language, 'Loading profile...', '正在加载资料...')}</p>
                   ) : (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs font-bold text-on-surface-variant">Name</label>
+                        <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Name', '姓名')}</label>
                         <input
                           className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
                           value={displayName}
@@ -138,7 +141,7 @@ export default function ProfileAvatarMenu({
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-on-surface-variant">Age</label>
+                        <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Age', '年龄')}</label>
                         <input
                           className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
                           value={ageInput}
@@ -149,16 +152,16 @@ export default function ProfileAvatarMenu({
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-on-surface-variant">Gender</label>
+                        <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Gender', '性别')}</label>
                         <input
                           className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
                           value={gender}
                           onChange={(e) => setGender(e.target.value)}
-                          placeholder="e.g. Male / Female / Non-binary"
+                          placeholder={tr(language, 'e.g. Male / Female / Non-binary', '例如：男 / 女 / 其他')}
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-on-surface-variant">Signature</label>
+                        <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Signature', '个性签名')}</label>
                         <textarea
                           className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm min-h-[96px]"
                           value={signature}
@@ -174,14 +177,14 @@ export default function ProfileAvatarMenu({
                           onClick={() => void save()}
                           disabled={saving}
                         >
-                          {saving ? 'Saving...' : 'Save'}
+                          {saving ? tr(language, 'Saving...', '保存中...') : tr(language, 'Save', '保存')}
                         </button>
                         <button
                           type="button"
                           className="rounded-full border border-red-300 text-red-600 px-4 py-2.5 text-sm font-bold"
                           onClick={logout}
                         >
-                          Logout
+                          {tr(language, 'Logout', '退出登录')}
                         </button>
                       </div>
                     </div>

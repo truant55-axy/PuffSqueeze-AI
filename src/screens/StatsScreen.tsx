@@ -11,8 +11,9 @@ import {
 } from 'recharts';
 import { DashboardData, getDashboard } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
+import { AppLanguage, tr } from '../i18n';
 
-export default function StatsScreen({ onBack }: { onBack: () => void }) {
+export default function StatsScreen({ onBack, language }: { onBack: () => void; language: AppLanguage }) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [error, setError] = useState('');
   const userId = getCurrentUserId();
@@ -24,7 +25,7 @@ export default function StatsScreen({ onBack }: { onBack: () => void }) {
         setDashboard(data);
         setError('');
       } catch (e: any) {
-        setError(e?.message || 'Failed to load stats');
+        setError(e?.message || tr(language, 'Failed to load stats', '加载统计失败'));
       }
     };
     load();
@@ -56,8 +57,8 @@ export default function StatsScreen({ onBack }: { onBack: () => void }) {
 
       <main className="pt-24 px-6 max-w-2xl mx-auto w-full">
         <section className="mb-12">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 mb-2">Analysis</h2>
-          <h3 className="text-4xl font-serif italic text-on-surface tracking-tight">Daily Counts</h3>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 mb-2">{tr(language, 'Analysis', '分析')}</h2>
+          <h3 className="text-4xl font-serif italic text-on-surface tracking-tight">{tr(language, 'Daily Counts', '每日统计')}</h3>
         </section>
 
         {/* Today's Stats */}

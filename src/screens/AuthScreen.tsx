@@ -2,12 +2,14 @@ import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { login, register } from '../services/backendService';
 import { setCurrentUserId } from '../services/session';
+import { AppLanguage, tr } from '../i18n';
 
 interface AuthScreenProps {
   onLogin: () => void;
+  language: AppLanguage;
 }
 
-export default function AuthScreen({ onLogin }: AuthScreenProps) {
+export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -28,7 +30,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
 
   const submit = async () => {
     if (!email.trim() || !password.trim() || (isRegisterMode && !displayName.trim())) {
-      setError('Please fill all required fields.');
+      setError(tr(language, 'Please fill all required fields.', '请填写所有必填项。'));
       return;
     }
 
@@ -41,7 +43,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
       setCurrentUserId(user.id);
       onLogin();
     } catch (e: any) {
-      setError(e?.message || 'Authentication failed');
+      setError(e?.message || tr(language, 'Authentication failed', '认证失败'));
     } finally {
       setIsSubmitting(false);
     }
@@ -73,7 +75,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-on-surface-variant text-xs md:text-sm mt-3 md:mt-4 leading-relaxed max-w-[280px] sm:max-w-xs mx-auto md:mx-0"
             >
-              Your sanctuary is waiting. Connect with Bode and start your PuffSqueeze session.
+              {tr(language, 'Your sanctuary is waiting. Connect with Bode and start your PuffSqueeze session.', '你的心灵栖息地已准备好。连接 Bode，开始你的 PuffSqueeze 旅程。')}
             </motion.p>
           </section>
 
@@ -97,10 +99,10 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
               <div className="space-y-3">
                 {isRegisterMode && (
                   <div className="space-y-1">
-                    <label className="font-body text-[10px] font-bold text-on-surface-variant ml-1 uppercase tracking-wider">Name</label>
+                    <label className="font-body text-[10px] font-bold text-on-surface-variant ml-1 uppercase tracking-wider">{tr(language, 'Name', '姓名')}</label>
                     <input
                       className="w-full bg-surface-container-low border border-transparent focus:border-primary/20 rounded-xl py-2.5 px-4 focus:ring-0 focus:bg-surface-container-lowest liquid-motion outline-none text-on-surface placeholder:text-outline/40 text-sm"
-                      placeholder="Your name"
+                      placeholder={tr(language, 'Your name', '你的名字')}
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
@@ -109,11 +111,11 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
                 )}
 
                 <div className="space-y-1">
-                  <label className="font-body text-[10px] font-bold text-on-surface-variant ml-1 uppercase tracking-wider">Email</label>
+                  <label className="font-body text-[10px] font-bold text-on-surface-variant ml-1 uppercase tracking-wider">{tr(language, 'Email', '邮箱')}</label>
                   <div className="relative group">
                     <input
                       className="w-full bg-surface-container-low border border-transparent focus:border-primary/20 rounded-xl py-2.5 px-4 focus:ring-0 focus:bg-surface-container-lowest liquid-motion outline-none text-on-surface placeholder:text-outline/40 text-sm"
-                      placeholder="hello@sanctuary.com"
+                      placeholder={tr(language, 'hello@sanctuary.com', 'hello@sanctuary.com')}
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -124,12 +126,12 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
 
                 <div className="space-y-1">
                   <div className="flex justify-between items-center px-1">
-                    <label className="font-body text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Password</label>
+                    <label className="font-body text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{tr(language, 'Password', '密码')}</label>
                   </div>
                   <div className="relative group">
                     <input
                       className="w-full bg-surface-container-low border border-transparent focus:border-primary/20 rounded-xl py-2.5 px-4 focus:ring-0 focus:bg-surface-container-lowest liquid-motion outline-none text-on-surface placeholder:text-outline/40 text-sm"
-                      placeholder="Enter password"
+                      placeholder={tr(language, 'Enter password', '输入密码')}
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -147,7 +149,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
                   type="submit"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Please wait...' : isRegisterMode ? 'Create Account' : 'Enter Sanctuary'}
+                  {isSubmitting ? tr(language, 'Please wait...', '请稍候...') : isRegisterMode ? tr(language, 'Create Account', '创建账号') : tr(language, 'Enter Sanctuary', '进入疗愈空间')}
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
 
@@ -155,7 +157,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-outline-variant/20"></div>
                   </div>
-                  <span className="relative bg-surface-container-lowest px-2 text-[9px] font-bold text-outline uppercase">Or</span>
+                  <span className="relative bg-surface-container-lowest px-2 text-[9px] font-bold text-outline uppercase">{tr(language, 'Or', '或')}</span>
                 </div>
 
                 <button
@@ -166,7 +168,7 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
                     setError('');
                   }}
                 >
-                  {isRegisterMode ? 'Already have account? Login' : 'Create account'}
+                  {isRegisterMode ? tr(language, 'Already have account? Login', '已有账号？去登录') : tr(language, 'Create account', '创建账号')}
                 </button>
               </div>
             </form>
@@ -176,4 +178,3 @@ export default function AuthScreen({ onLogin }: AuthScreenProps) {
     </div>
   );
 }
-

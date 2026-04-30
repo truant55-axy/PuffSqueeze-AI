@@ -2,8 +2,9 @@ import { motion } from 'motion/react';
 import ProfileAvatarMenu from '../components/ProfileAvatarMenu';
 import { getCurrentUserId } from '../services/session';
 import { Screen } from '../types';
+import { AppLanguage, tr } from '../i18n';
 
-export default function GameScreen({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
+export default function GameScreen({ onNavigate, language }: { onNavigate: (screen: Screen) => void; language: AppLanguage }) {
   const userId = getCurrentUserId();
 
   return (
@@ -14,13 +15,13 @@ export default function GameScreen({ onNavigate }: { onNavigate: (screen: Screen
             <span className="material-symbols-outlined text-primary">waves</span>
             <h1 className="text-xl font-bold text-primary font-headline tracking-tight">PuffSqueeze AI</h1>
           </div>
-          <ProfileAvatarMenu userId={userId} sizeClassName="w-8 h-8" />
+          <ProfileAvatarMenu userId={userId} sizeClassName="w-8 h-8" language={language} />
         </div>
       </header>
 
       <main className="flex-grow flex flex-col overflow-hidden px-4 md:px-8 max-w-4xl mx-auto w-full pt-6">
         <section className="mb-8 shrink-0">
-          <h2 className="text-4xl font-serif italic text-on-surface tracking-tight">Game Center</h2>
+          <h2 className="text-4xl font-serif italic text-on-surface tracking-tight">{tr(language, 'Game Center', '游戏中心')}</h2>
         </section>
 
         <div className="grid grid-cols-2 gap-6 mt-4">
@@ -35,7 +36,7 @@ export default function GameScreen({ onNavigate }: { onNavigate: (screen: Screen
             </div>
             <div className="text-center">
               <p className="font-bold text-on-surface text-sm">Puff Zen</p>
-              <span className="text-[9px] font-black text-primary/60 uppercase tracking-[0.2em]">Play Now</span>
+              <span className="text-[9px] font-black text-primary/60 uppercase tracking-[0.2em]">{tr(language, 'Play Now', '开始游戏')}</span>
             </div>
           </motion.div>
 
@@ -49,7 +50,7 @@ export default function GameScreen({ onNavigate }: { onNavigate: (screen: Screen
             </div>
             <div className="text-center">
               <p className="font-bold text-on-surface text-sm">Squeeze Flow</p>
-              <span className="text-[9px] font-black text-secondary/60 uppercase tracking-[0.2em]">Reserved</span>
+              <span className="text-[9px] font-black text-secondary/60 uppercase tracking-[0.2em]">{tr(language, 'Reserved', '预留')}</span>
             </div>
           </motion.div>
         </div>
