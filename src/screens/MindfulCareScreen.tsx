@@ -254,6 +254,27 @@ export default function MindfulCareScreen({ onBack, language }: { onBack: () => 
   };
 
   useEffect(() => {
+    const autoStart = localStorage.getItem('puffsqueeze_mindfulcare_autostart');
+    if (autoStart === 'feeding') {
+      localStorage.removeItem('puffsqueeze_mindfulcare_autostart');
+      setFeedingProgress(0);
+      setCleaningProgress(0);
+      setSeedsFed(0);
+      setFeedingCelebrating(false);
+      setPetMessage(tr(language, 'Tap a care action to interact with your bird.', '点击一个互动按钮陪陪小鸟吧。'));
+      setPlannerOpen(false);
+      setActiveRoutine('feeding');
+    }
+    if (autoStart === 'breathing') {
+      localStorage.removeItem('puffsqueeze_mindfulcare_autostart');
+      setBreathStepIndex(0);
+      setBreathRemain(4);
+      setBreathCyclesDone(0);
+      setActiveRoutine('breathing');
+    }
+  }, [language]);
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem('puffsqueeze_daily_plans');
       if (raw) {

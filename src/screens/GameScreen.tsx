@@ -43,14 +43,32 @@ export default function GameScreen({ onNavigate, language }: { onNavigate: (scre
           <motion.div 
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
+            onClick={() => onNavigate('stress-questionnaire')}
             className="aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
           >
             <div className="w-20 h-20 rounded-3xl bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-all shadow-inner">
               <span className="material-symbols-outlined text-4xl text-secondary/60 group-hover:text-secondary group-hover:scale-110 transition-all">touch_app</span>
             </div>
             <div className="text-center">
-              <p className="font-bold text-on-surface text-sm">Squeeze Flow</p>
+              <p className="font-bold text-on-surface text-sm">Stress Questionnaire</p>
               <span className="text-[9px] font-black text-secondary/60 uppercase tracking-[0.2em]">{tr(language, 'Reserved', '预留')}</span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onNavigate('treehole-poetry')}
+            className="aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
+          >
+            <div className="w-20 h-20 rounded-3xl bg-cyan-200/40 flex items-center justify-center group-hover:bg-cyan-200/60 transition-all shadow-inner">
+              <span className="material-symbols-outlined text-4xl text-cyan-700">auto_stories</span>
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-on-surface text-sm">Tree-hole Poetry</p>
+              <span className="text-[9px] font-black text-cyan-700/80 uppercase tracking-[0.2em]">
+                {tr(language, 'Write Now', 'Write Now')}
+              </span>
             </div>
           </motion.div>
         </div>

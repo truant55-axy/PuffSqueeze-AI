@@ -25,9 +25,18 @@ export async function getChatResponse(message: string, history: ChatHistory[], c
     }),
   });
 
-  const data = await res.json();
+  const raw = await res.text();
+  let data: any = null;
+  if (raw && raw.trim() !== '') {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error(`AI returned non-JSON response (HTTP ${res.status})`);
+    }
+  }
+
   if (!res.ok || !data?.success) {
-    throw new Error(data?.message || 'AI request failed');
+    throw new Error(data?.message || `AI request failed (HTTP ${res.status})`);
   }
 
   return data.data.reply as string;

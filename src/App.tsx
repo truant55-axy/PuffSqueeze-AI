@@ -9,6 +9,8 @@ import PuffZenScreen from './screens/PuffZenScreen';
 import MindfulCareScreen from './screens/MindfulCareScreen';
 import StatsScreen from './screens/StatsScreen';
 import StressIndexScreen from './screens/StressIndexScreen';
+import StressQuestionnaireScreen from './screens/StressQuestionnaireScreen';
+import TreeholePoetryScreen from './screens/TreeholePoetryScreen';
 import BottomNav from './components/BottomNav';
 import { Screen } from './types';
 import { clearCurrentUserId, hasCurrentUserId } from './services/session';
@@ -27,7 +29,9 @@ function isValidScreen(value: string | null): value is Screen {
     || value === 'mindful-care'
     || value === 'vitals-check'
     || value === 'stats'
-    || value === 'stress-index';
+    || value === 'stress-index'
+    || value === 'stress-questionnaire'
+    || value === 'treehole-poetry';
 }
 
 export default function App() {
@@ -85,6 +89,8 @@ export default function App() {
           {currentScreen === 'connect' && <ConnectScreen language={language} />}
           {currentScreen === 'stats' && <StatsScreen onBack={() => setCurrentScreen('home')} language={language} />}
           {currentScreen === 'stress-index' && <StressIndexScreen onBack={() => setCurrentScreen('home')} language={language} />}
+          {currentScreen === 'stress-questionnaire' && <StressQuestionnaireScreen onBack={() => setCurrentScreen('game')} onNavigate={setCurrentScreen} language={language} />}
+          {currentScreen === 'treehole-poetry' && <TreeholePoetryScreen onBack={() => setCurrentScreen('game')} language={language} />}
         </motion.main>
       </AnimatePresence>
 
@@ -98,7 +104,9 @@ export default function App() {
 
       {currentScreen !== 'auth' && 
        currentScreen !== 'mindful-care' &&
-       currentScreen !== 'puff-zen' && (
+       currentScreen !== 'puff-zen' &&
+       currentScreen !== 'stress-questionnaire' &&
+       currentScreen !== 'treehole-poetry' && (
         <BottomNav 
           activeScreen={currentScreen} 
           onNavigate={setCurrentScreen}
