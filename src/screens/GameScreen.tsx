@@ -19,17 +19,18 @@ export default function GameScreen({ onNavigate, language }: { onNavigate: (scre
         </div>
       </header>
 
-      <main className="flex-grow flex flex-col overflow-hidden px-4 md:px-8 max-w-4xl mx-auto w-full pt-6">
+      <main className="flex-grow flex flex-col overflow-hidden px-6 md:px-8 max-w-7xl mx-auto w-full pt-6 pb-6">
         <section className="mb-8 shrink-0">
           <h2 className="text-4xl font-serif italic text-on-surface tracking-tight">{tr(language, 'Game Center', '游戏中心')}</h2>
         </section>
 
-        <div className="grid grid-cols-2 gap-6 mt-4">
+        <section className="flex-1 overflow-hidden flex items-center -mt-8">
+          <div className="grid w-full grid-cols-3 gap-6 items-center">
           <motion.div 
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onNavigate('puff-zen')}
-            className="aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
+            className="w-full aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
           >
             <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all shadow-inner">
               <span className="material-symbols-outlined text-4xl text-primary/60 group-hover:text-primary group-hover:scale-110 transition-all">bubble_chart</span>
@@ -44,10 +45,10 @@ export default function GameScreen({ onNavigate, language }: { onNavigate: (scre
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onNavigate('stress-questionnaire')}
-            className="aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
+            className="w-full aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
           >
-            <div className="w-20 h-20 rounded-3xl bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-all shadow-inner">
-              <span className="material-symbols-outlined text-4xl text-secondary/60 group-hover:text-secondary group-hover:scale-110 transition-all">touch_app</span>
+            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all shadow-inner">
+              <span className="material-symbols-outlined text-4xl text-primary/60 group-hover:text-primary group-hover:scale-110 transition-all">touch_app</span>
             </div>
             <div className="text-center">
               <p className="font-bold text-on-surface text-sm">Stress Questionnaire</p>
@@ -59,10 +60,10 @@ export default function GameScreen({ onNavigate, language }: { onNavigate: (scre
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onNavigate('treehole-poetry')}
-            className="aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
+            className="w-full aspect-square bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/30 flex flex-col items-center justify-center gap-4 cursor-pointer group shadow-xl shadow-black/5"
           >
-            <div className="w-20 h-20 rounded-3xl bg-cyan-200/40 flex items-center justify-center group-hover:bg-cyan-200/60 transition-all shadow-inner">
-              <span className="material-symbols-outlined text-4xl text-cyan-700">auto_stories</span>
+            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all shadow-inner">
+              <span className="material-symbols-outlined text-4xl text-primary/60 group-hover:text-primary group-hover:scale-110 transition-all">auto_stories</span>
             </div>
             <div className="text-center">
               <p className="font-bold text-on-surface text-sm">Tree-hole Poetry</p>
@@ -71,7 +72,8 @@ export default function GameScreen({ onNavigate, language }: { onNavigate: (scre
               </span>
             </div>
           </motion.div>
-        </div>
+          </div>
+        </section>
       </main>
     </div>
   );
