@@ -53,7 +53,16 @@ export interface UsagePayload {
   action_detail?: Record<string, unknown>;
 }
 
+export interface LatestSqueezeData {
+  user_id: number;
+  device_id: string;
+  strike_value: number;
+  raw_data?: Record<string, unknown>;
+  received_at: string;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const M5_API_BASE = import.meta.env.VITE_M5_API_BASE_URL || 'http://localhost:8090';
 
 async function parseJson(res: Response) {
   const data = await res.json();
@@ -189,4 +198,10 @@ export async function logUsage(payload: UsagePayload): Promise<number> {
   });
   const data = await parseJson(res);
   return Number(data?.data?.id || 0);
+}
+
+export async function getLatestSqueeze(): Promise<LatestSqueezeData | null> {
+  const res = await fetch(`${M5_API_BASE}/api/latest-squeeze`);
+  const data = await parseJson(res);
+  return (data?.data ?? null) as LatestSqueezeData | null;
 }

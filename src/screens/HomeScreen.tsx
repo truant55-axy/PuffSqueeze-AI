@@ -1,7 +1,7 @@
 import { motion, useAnimation } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Screen } from '../types';
-import { DashboardData, getDashboard, getProfile, recordSqueezeEvent, updateProfile } from '../services/backendService';
+import { DashboardData, getDashboard, getLatestSqueeze, getProfile, recordSqueezeEvent, updateProfile } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
 import { AppLanguage, tr } from '../i18n';
 
@@ -31,6 +31,7 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
   const GAME_THRESHOLD = 80;
   const userId = getCurrentUserId();
   const lastTotalRef = useRef<number | null>(null);
+  const lastM5ReceivedAtRef = useRef<string | null>(null);
 
   const triggerBirdReaction = async () => {
     setIsJiggling(true);
@@ -108,6 +109,47 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
     const timer = setInterval(() => {
       void poll();
     }, 1000);
+
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    let active = true;
+
+    const pollLatestSqueeze = async () => {
+      try {
+        const latest = await getLatestSqueeze();
+        if (!active || !latest) return;
+        if (latest.user_id !== userId) return;
+
+        if (lastM5ReceivedAtRef.current !== latest.received_at) {
+          lastM5ReceivedAtRef.current = latest.received_at;
+          setSqueezeCount((prev) => prev + 1);
+          setSessionSqueezes((prev) => prev + 1);
+          void triggerBirdReaction();
+
+          try {
+            const synced = await recordSqueezeEvent(userId, latest.strike_value);
+            if (active) {
+              setDashboard(synced);
+              lastTotalRef.current = synced.total_squeezes;
+            }
+          } catch {
+            // Keep UI reaction even if dashboard sync fails.
+          }
+        }
+      } catch {
+        // Ignore temporary poll errors to avoid noisy UI.
+      }
+    };
+
+    const timer = setInterval(() => {
+      void pollLatestSqueeze();
+    }, 800);
+    void pollLatestSqueeze();
 
     return () => {
       active = false;
