@@ -5,13 +5,13 @@
 // ---------------------------
 // Wi-Fi and backend settings
 // ---------------------------
-const char* WIFI_SSID = "👾👾";
-const char* WIFI_PASS = "Lhs040120";
+const char* WIFI_SSID = "kkkkk";
+const char* WIFI_PASS = "12345678";
 
 // IMPORTANT:
 // Use your computer LAN IP, not localhost.
 // Example: http://192.168.31.20:8080/api/squeeze-event
-const char* API_URL = "http://172.20.10.2:8080/api/squeeze-event";
+const char* API_URL = "https://puffsqueeze-ai-m5.onrender.com/api/squeeze-event";
 const int USER_ID = 1;
 const char* DEVICE_ID = "M5StickCPlus_RP-C5-LT";
 
