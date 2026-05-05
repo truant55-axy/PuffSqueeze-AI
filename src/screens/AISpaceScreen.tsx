@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getChatResponse } from '../services/geminiService';
-import { Message } from '../types';
+import { ChatAttachment, Message } from '../types';
 import { getAiReport, getDashboard } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
 import ProfileAvatarMenu from '../components/ProfileAvatarMenu';
@@ -31,7 +31,9 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
     currentStress: 0,
     weeklyAverage: 0,
   });
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const userId = getCurrentUserId();
 
   useEffect(() => {
@@ -56,11 +58,60 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
     void loadMetrics();
   }, [userId]);
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const readFileAsAttachment = (file: File): Promise<ChatAttachment> =>
+    new Promise((resolve, reject) => {
+      const baseAttachment = {
+        id: `${Date.now()}-${file.name}-${Math.random().toString(16).slice(2)}`,
+        name: file.name,
+        type: file.type || 'unknown',
+        size: file.size,
+      };
+
+      if (!file.type.startsWith('image/')) {
+        resolve(baseAttachment);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => resolve({ ...baseAttachment, dataUrl: String(reader.result || '') });
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const maxFiles = 5;
+    const selectedFiles = Array.from(files).slice(0, maxFiles);
+    const nextAttachments = await Promise.all(selectedFiles.map(readFileAsAttachment));
+    setAttachments((prev) => [...prev, ...nextAttachments].slice(0, maxFiles));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input, timestamp: new Date() };
+    if ((!input.trim() && attachments.length === 0) || isLoading) return;
+
+    const messageText = input.trim();
+    const outgoingAttachments = attachments;
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: messageText || tr(language, 'Sent an attachment.', '发送了一个附件。'),
+      timestamp: new Date(),
+      attachments: outgoingAttachments,
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setAttachments([]);
     setIsLoading(true);
     try {
       const history = messages.map((m) => ({
@@ -68,10 +119,16 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
         parts: [{ text: m.content }],
       }));
       const strikeLevel = metrics.currentStress >= 75 ? 'high' : metrics.currentStress >= 50 ? 'medium' : 'low';
+      const attachmentSummary =
+        outgoingAttachments.length > 0
+          ? `\nAttached files: ${outgoingAttachments
+              .map((attachment) => `${attachment.name} (${attachment.type}, ${formatFileSize(attachment.size)})`)
+              .join('; ')}`
+          : '';
       const localizedInput =
         language === 'zh'
-          ? `Please reply in natural Chinese without markdown symbols. User message: ${input}`
-          : `Please reply in natural English without markdown symbols. User message: ${input}`;
+          ? `Please reply in natural Chinese without markdown symbols. User message: ${messageText || 'User sent attachments.'}${attachmentSummary}`
+          : `Please reply in natural English without markdown symbols. User message: ${messageText || 'User sent attachments.'}${attachmentSummary}`;
       const response = await getChatResponse(localizedInput, history, {
         userId,
         strikeLevel,
@@ -161,7 +218,32 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                     msg.role === 'assistant' ? 'rounded-tl-none bg-white/60 backdrop-blur-md text-on-surface' : 'rounded-tr-none bg-primary text-on-primary'
                   }`}
                 >
-                  {msg.content}
+                  <div>{msg.content}</div>
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className="mt-4 grid gap-3">
+                      {msg.attachments.map((attachment) =>
+                        attachment.dataUrl ? (
+                          <img
+                            key={attachment.id}
+                            src={attachment.dataUrl}
+                            alt={attachment.name}
+                            className="max-h-64 w-full rounded-2xl object-cover border border-white/30"
+                          />
+                        ) : (
+                          <div
+                            key={attachment.id}
+                            className="flex items-center gap-3 rounded-2xl bg-white/20 border border-white/30 px-4 py-3"
+                          >
+                            <span className="material-symbols-outlined text-xl">description</span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold">{attachment.name}</p>
+                              <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -176,10 +258,55 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
         </div>
 
         <div className="shrink-0 pt-4 pb-32">
-          <div className="max-w-2xl mx-auto bg-white/40 backdrop-blur-2xl p-2 rounded-full shadow-2xl border border-white/30 flex items-center gap-3">
-            <button className="w-12 h-12 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-white/50 transition-all">
-              <span className="material-symbols-outlined text-2xl">add_circle</span>
-            </button>
+          <div className="max-w-2xl mx-auto bg-white/40 backdrop-blur-2xl p-2 rounded-[2rem] shadow-2xl border border-white/30">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => void handleFilesSelected(e.target.files)}
+            />
+
+            {attachments.length > 0 && (
+              <div className="px-3 pt-3 pb-2 grid gap-2">
+                {attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center gap-3 rounded-2xl bg-white/45 border border-white/40 p-2"
+                  >
+                    {attachment.dataUrl ? (
+                      <img src={attachment.dataUrl} alt={attachment.name} className="h-12 w-12 rounded-xl object-cover" />
+                    ) : (
+                      <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-xl">description</span>
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-on-surface">{attachment.name}</p>
+                      <p className="text-xs text-on-surface-variant">{formatFileSize(attachment.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(attachment.id)}
+                      className="h-8 w-8 rounded-full hover:bg-white/60 text-on-surface-variant flex items-center justify-center"
+                      aria-label={tr(language, 'Remove attachment', '移除附件')}
+                    >
+                      <span className="material-symbols-outlined text-base">close</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-12 h-12 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-white/50 transition-all"
+                aria-label={tr(language, 'Upload photo or file', '上传照片或文件')}
+              >
+                <span className="material-symbols-outlined text-2xl">add_circle</span>
+              </button>
             <input
               className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant/40 font-body text-base font-medium"
               placeholder={tr(language, "Share what's on your mind...", '说说你现在在想什么...')}
@@ -193,9 +320,10 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                 }
               }}
             />
-            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={isLoading} className={`w-12 h-12 flex items-center justify-center rounded-full bg-primary text-on-primary ${isLoading ? 'opacity-50' : ''}`}>
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className={`w-12 h-12 flex items-center justify-center rounded-full bg-primary text-on-primary ${isLoading || (!input.trim() && attachments.length === 0) ? 'opacity-50' : ''}`}>
               <span className="material-symbols-outlined text-2xl">send</span>
             </motion.button>
+            </div>
           </div>
         </div>
       </main>

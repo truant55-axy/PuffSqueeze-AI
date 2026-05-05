@@ -5,6 +5,15 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  attachments?: ChatAttachment[];
+}
+
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  dataUrl?: string;
 }
 
 export interface Post {
