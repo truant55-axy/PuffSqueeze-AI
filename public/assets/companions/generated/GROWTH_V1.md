@@ -1,0 +1,18 @@
+# Growth forms v1
+
+Built-in imagegen, transparent PNG. Adolescent: growth-bloom-atlas-v1.png.
+Guardian: growth-guardian-atlas-v1.png. Two atlases x eight species = 16 new forms.
+
+## Bloom prompt
+
+Create a production sprite atlas for PuffSqueeze's growing virtual animal companions. References specify identities and soft illustrated rounded plush clay / gently shaded children's book art style; retain original species, markings and palette. Output ONE wide 2:1 transparent PNG atlas of EXACTLY eight isolated full-body characters in EXACT 4 equal columns x 2 equal rows, each centered inside its equal square cell with generous 12% transparent margin. NO grid lines, NO text, NO scene, NO ground shadows. Cell order top row: Puff bird(ref1), blue-gray cat(ref2), tan long floppy-ear spaniel dog(ref3), pink pig(ref4); bottom row: navy penguin with cream belly yellow feet, tan owl(ref5), white/gray seagull with golden beak, light blue dolphin with white belly. All are adolescent GROWTH stage variants: visibly slightly taller/longer bodies and more developed paws/wings/tails than babies, still irresistibly cute, joyful and recognizable, not simply identical baby copies. Each wears a small plain powder-blue neck scarf; Puff retains plain light-blue sweatshirt and white feather curl and lively waved wing, no lettering; pig sits naturally on FOUR legs / haunches NEVER upright human standing. Dolphin remains swimming, blue. Every animal has BOTH eyes CLOSED in simple smiling curved eyelids, no black pupils, eyes unobstructed by accessories, no eyebrows confusing eyes. Head gently three-quarter but not extreme. Keep ears and tails within cell. Uniform soft lighting, cohesive same-series character family. Request largest resolution supported, ideally 3072x1536.
+
+References: puff-bird-v4.png, cat-cozy-v2.png, dog-spaniel-v2.png, pig-seated-v2.png, owl-cozy-v2.png.
+Generated: exec-e7cc8c0e-a016-47de-8578-1b169a416b28.png.
+
+## Guardian prompt
+
+Create ONE new sprite atlas, final grown GUARDIAN stage of these exact eight companions. Reference is the adolescent-stage atlas, preserve each identity, markings, color, soft shaded plush illustrated art and SAME ORDER. Transparent 2:1 wide canvas, EXACTLY 4 equal square columns x 2 equal square rows. Each full-body character fits in central 76% of its square with EMPTY transparent margins so absolutely no character crosses cell boundary. Top row white Puff bird blue sweatshirt; blue-gray cream cat; tan spaniel long floppy ears; pink pig seated naturally with four hooves NEVER human upright. Bottom navy cream penguin; tan cream owl; white gray-wing seagull yellow beak; light-blue white-belly swimming dolphin. Grown stage shows distinctly longer sturdier body/tail/wings and warm confident expressive posture than adolescent, still cute gentle and chubby, puppy/cat/pig remain animal anatomy. Each has a small powder-blue scarf and an understated small cream/gold STAR charm on scarf, and a tiny sage green TWO LEAF hair clip at side/top of head (NOT elaborate crowns). Puff retains signature white curl, plain blue sweatshirt with NO LETTERS and waving white wing. Dolphins blue. All faces smile with BOTH eyes CLOSED curved smiling eyelids; NO pupils, NO eyebrows, accessories never cover eyes. Single family art with lovely pale-blue accents, not pixel art. NO text, no grid lines, no background, no props, no shadows. Need clearly physically grown variants, NOT identical copies with only accessories. Largest output supported ideally3072x1536.
+
+Reference: growth-bloom-atlas-v1.png.
+Generated: exec-3032f5c7-2233-48e5-906b-665e8555a5e3.png.

@@ -1,9 +1,15 @@
+import AppIcon from '../components/AppIcon';
+import PasswordSettings from '../components/PasswordSettings';
 import { motion, useAnimation } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Screen } from '../types';
 import { DashboardData, getDashboard, getLatestSqueeze, getProfile, recordSqueezeEvent, updateProfile } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
 import { AppLanguage, tr } from '../i18n';
+import HealingAnimal from '../components/HealingAnimal';
+import CompanionMoodPicker from '../components/CompanionMoodPicker';
+import { COMPANION_CHOICES } from '../services/companionService';
+import { useCompanion } from '../hooks/useCompanion';
 
 interface HomeScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -12,6 +18,9 @@ interface HomeScreenProps {
 }
 
 export default function HomeScreen({ onNavigate, onLogout, language }: HomeScreenProps) {
+  const userId = getCurrentUserId();
+  const [companion, setCompanion] = useCompanion();
+  const [isCompanionPickerOpen, setIsCompanionPickerOpen] = useState(false);
   const [squeezeCount, setSqueezeCount] = useState(0);
   const [sessionSqueezes, setSessionSqueezes] = useState(0);
   const [isJiggling, setIsJiggling] = useState(false);
@@ -29,11 +38,10 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
   const controls = useAnimation();
   const AI_THRESHOLD = 50;
   const GAME_THRESHOLD = 80;
-  const userId = getCurrentUserId();
   const lastTotalRef = useRef<number | null>(null);
   const lastM5ReceivedAtRef = useRef<string | null>(null);
 
-  const triggerBirdReaction = async () => {
+  const triggerCompanionReaction = async () => {
     setIsJiggling(true);
     await controls.start({
       scale: [1, 1.25, 0.85, 1.1, 1],
@@ -47,7 +55,7 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
     const newCount = squeezeCount + 1;
     setSqueezeCount(newCount);
     setSessionSqueezes((prev) => prev + 1);
-    await triggerBirdReaction();
+    await triggerCompanionReaction();
 
     try {
       const strikeValue = Math.round(30 + Math.random() * 70);
@@ -92,7 +100,7 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
           const delta = data.total_squeezes - previousTotal;
           setSqueezeCount((prev) => prev + delta);
           setSessionSqueezes((prev) => prev + delta);
-          void triggerBirdReaction();
+          void triggerCompanionReaction();
         }
         lastTotalRef.current = data.total_squeezes;
       } catch (e: any) {
@@ -129,7 +137,7 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
           lastM5ReceivedAtRef.current = latest.received_at;
           setSqueezeCount((prev) => prev + 1);
           setSessionSqueezes((prev) => prev + 1);
-          void triggerBirdReaction();
+          void triggerCompanionReaction();
 
           try {
             const synced = await recordSqueezeEvent(userId, latest.strike_value);
@@ -198,42 +206,44 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
   };
 
   return (
-    <div className="min-h-screen pb-24 relative z-10">
-      <header className="fixed top-0 w-full z-50 bg-white/10 backdrop-blur-2xl border-b border-white/10">
-        <div className="flex items-center justify-between px-8 py-4 w-full max-w-7xl mx-auto">
+    <div className="min-h-screen pb-28 relative z-10">
+      <header className="fixed top-0 w-full z-50 bg-[#f7fbff]/85 backdrop-blur-2xl border-b border-[#d8e5f0]/70">
+        <div className="flex items-center justify-between px-5 sm:px-8 py-3.5 w-full max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <motion.span 
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="material-symbols-outlined text-primary text-3xl"
-            >
-              waves
-            </motion.span>
-            <h1 className="text-2xl font-bold text-primary font-headline tracking-tight">PuffSqueeze AI</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-primary font-headline tracking-tight">PuffSqueeze</h1>
           </div>
           <button
             type="button"
             onClick={() => void openProfile()}
-            className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/50 shadow-inner hover:scale-105 transition-transform"
+            className="w-10 h-10 rounded-full border border-primary/15 bg-primary-container/70 text-primary hover:bg-primary-container transition-colors flex items-center justify-center"
             aria-label="Open profile"
           >
-            <div className="w-full h-full">
-              <img className="w-full h-full object-cover" src="https://picsum.photos/seed/user1/100/100" alt="User" referrerPolicy="no-referrer" />
-            </div>
+            <AppIcon className="app-icon text-xl" aria-hidden="true">person</AppIcon>
           </button>
         </div>
       </header>
 
-      <main className="pt-24 px-6 max-w-2xl mx-auto space-y-10">
-        {/* Side-by-side Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
+      <main className="pt-24 sm:pt-28 px-5 sm:px-6 max-w-2xl mx-auto space-y-7 sm:space-y-8">
+        <section className="px-1 pt-2 sm:pt-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-secondary/80 mb-2">
+            {tr(language, 'A gentle moment for you', '给自己留一点温柔时间')}
+          </p>
+          <h2 className="font-serif text-[28px] sm:text-3xl text-on-surface leading-tight">
+            {tr(language, 'Take a breath. You are here.', '慢慢来，你已经在好好照顾自己。')}
+          </h2>
+          <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+            {tr(language, 'A soft squeeze is enough. Follow your own pace.', '轻轻按下两侧按键，跟着自己的节奏慢慢放松。')}
+          </p>
+        </section>
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <motion.section 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onNavigate('stress-index')}
-            className="glass-card rounded-[2rem] p-6 relative overflow-hidden group flex flex-col justify-between cursor-pointer"
+            className="glass-card rounded-[1.6rem] p-4 sm:p-5 relative overflow-hidden group flex flex-col justify-between cursor-pointer editorial-shadow"
           >
             <motion.div 
               animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
@@ -242,10 +252,10 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
             />
             
             <div className="relative z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant/60 mb-2 block">Stress Index</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant mb-2 block">{tr(language, 'Your feeling', '此刻的心情')}</span>
               <div className="flex items-baseline gap-1 mb-3">
-                <span className="text-4xl font-headline font-black text-primary">{stressValue}</span>
-                <span className="text-primary/60 font-bold text-sm">%</span>
+                <span className="text-3xl sm:text-4xl font-headline font-semibold text-primary">{stressValue}</span>
+                <span className="text-primary/70 font-medium text-sm">%</span>
               </div>
               <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden p-0.5 border border-white/20">
                 <motion.div 
@@ -256,8 +266,8 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
                 />
               </div>
             </div>
-            <p className="text-[10px] text-on-surface-variant font-medium mt-4 leading-tight">
-              Level is <span className="text-primary font-bold">{stressStatus}</span>
+            <p className="text-[10px] text-on-surface-variant font-medium mt-3 leading-tight">
+              {tr(language, 'Today feels', '今天的状态')} <span className="text-primary font-semibold">{stressStatus}</span>
             </p>
           </motion.section>
 
@@ -268,13 +278,13 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
             whileTap={{ scale: 0.98 }}
             onClick={() => onNavigate('stats')}
             transition={{ delay: 0.1 }}
-            className="bg-white/40 backdrop-blur-lg rounded-[2rem] p-6 border border-white/20 shadow-sm flex flex-col justify-between cursor-pointer"
+            className="bg-[#f5f9fd]/80 backdrop-blur-lg rounded-[1.6rem] p-4 sm:p-5 border border-white/80 shadow-[0_12px_32px_rgba(53,72,91,0.06)] flex flex-col justify-between cursor-pointer"
           >
             <div className="relative z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant/60 mb-2 block">Squeeze Pulse</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant mb-2 block">{tr(language, 'Gentle presses', '轻轻按压')}</span>
               <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-4xl font-headline font-black text-on-surface tracking-tighter">{totalSqueezes.toLocaleString()}</span>
-                <span className="text-on-surface-variant font-bold text-xs">Hits</span>
+                <span className="text-3xl sm:text-4xl font-headline font-semibold text-on-surface tracking-tight">{totalSqueezes.toLocaleString()}</span>
+                <span className="text-on-surface-variant font-medium text-xs">{tr(language, 'times', '次')}</span>
               </div>
             </div>
 
@@ -296,12 +306,12 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
         </div>
 
 
-        {/* Sanctuary Core Character - Placeholder for 3D Bode Bird */}
+        {/* Always-present living companion */}
         <motion.section 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
-          className="relative glass-card rounded-[2.5rem] p-12 flex flex-col items-center overflow-hidden min-h-[480px] justify-center"
+          className="relative glass-card rounded-[2rem] p-6 sm:p-9 flex flex-col items-center overflow-hidden min-h-[410px] justify-center editorial-shadow"
         >
           <motion.div 
             animate={{ 
@@ -313,20 +323,70 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
               repeat: Infinity, 
               ease: "easeInOut" 
             }}
-            className="absolute inset-0 bg-gradient-to-b from-primary/5 to-secondary/5 pointer-events-none" 
+            className="absolute inset-0 bg-gradient-to-b from-[#e1eff9]/60 via-[#f2f7fc]/45 to-[#e8edf8]/55 pointer-events-none" 
           />
           
           <motion.button 
             whileHover={{ scale: 1.1, x: 5 }}
             whileTap={{ scale: 0.9 }}
-            className="absolute top-8 right-8 bg-white/50 backdrop-blur-md text-primary px-6 py-3 rounded-full text-xs font-black flex items-center gap-2 hover:bg-white transition-all shadow-sm z-10 border border-white/20"
+            onClick={() => void handleSqueeze()}
+            aria-label={tr(language, 'Try a gentle squeeze', '轻轻按一下试试')}
+            className="absolute top-5 right-5 bg-white/75 backdrop-blur-md text-primary px-4 py-2.5 rounded-full text-[11px] font-semibold flex items-center gap-2 hover:bg-white transition-all shadow-sm z-10 border border-primary/10"
           >
-            <span className="material-symbols-outlined text-sm">pan_tool</span>
-            <span>[Simulate Hit]</span>
+            <AppIcon className="app-icon text-sm">touch_app</AppIcon>
+            <span>{tr(language, 'Press me', '轻按试试')}</span>
           </motion.button>
 
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setIsCompanionPickerOpen((open) => !open)}
+            aria-expanded={isCompanionPickerOpen}
+            className="absolute top-5 left-5 bg-white/75 backdrop-blur-md text-primary px-3 py-2.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 hover:bg-white transition-all shadow-sm z-20 border border-primary/10"
+          >
+            <span className="h-6 w-6" aria-hidden="true"><HealingAnimal kind={companion} /></span>
+            <span>{tr(language, 'My friend', '换伙伴')}</span>
+          </motion.button>
+
+          {isCompanionPickerOpen && (
+            <div className="absolute left-4 right-4 top-[4.5rem] z-30 rounded-3xl border border-white/80 bg-[#fbfdff]/95 p-4 shadow-xl backdrop-blur-xl sm:left-6 sm:right-auto sm:w-[360px]">
+              <div className="mb-3">
+                <p className="text-sm font-bold text-on-surface">{tr(language, 'Who would you like beside you?', '今天想让谁陪在身边？')}</p>
+                <p className="mt-1 text-xs text-on-surface-variant">{tr(language, 'Your companion stays here and gently reacts when you press.', '伙伴会一直陪在这里，也会回应你的按压。')}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {COMPANION_CHOICES.map((choice) => (
+                  <button key={choice.kind} type="button" onClick={() => {
+                    setCompanion(choice.kind);
+                    setIsCompanionPickerOpen(false);
+                  }} className={`rounded-2xl border px-3 py-3 text-left transition-all ${companion === choice.kind ? 'border-primary bg-primary/10 shadow-sm' : 'border-primary/10 bg-white/80 hover:bg-primary/5'}`}>
+                    <span className="block h-12 w-12 mx-auto" aria-hidden="true"><HealingAnimal kind={choice.kind} /></span>
+                    <span className="mt-1 block text-[11px] font-semibold text-on-surface">{tr(language, choice.en, choice.zh)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {squeezeCount > 0 && (
+            <motion.div
+              key={squeezeCount}
+              initial={{ opacity: 0, y: 8, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="relative z-10 mb-3 w-full max-w-[220px] px-2 bg-white/85 backdrop-blur-md py-1.5 rounded-2xl text-[10px] font-black text-primary border border-primary/20 uppercase tracking-[0.2em] shadow-lg flex flex-col items-center gap-0.5"
+            >
+              <div className="flex items-center gap-1.5 max-w-full">
+                <AppIcon className="app-icon text-[10px] text-secondary">favorite</AppIcon>
+                <span>{tr(language, `${squeezeCount} gentle presses`, `轻轻按压 ${squeezeCount} 次`)}</span>
+              </div>
+              <div className="text-[8px] opacity-70 text-center leading-tight break-words">
+                {tr(language, 'Thank you for taking a moment for yourself.', '谢谢你愿意留一点时间给自己。')}
+              </div>
+            </motion.div>
+          )}
+
           <motion.div 
-            className="relative w-64 h-72 mb-8 cursor-pointer select-none flex items-center justify-center transition-all"
+            className="relative w-44 h-52 sm:w-48 sm:h-56 mb-4 cursor-pointer select-none flex items-center justify-center transition-all"
             draggable="false"
             animate={controls}
             onClick={handleSqueeze}
@@ -345,132 +405,24 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
               />
             )}
 
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-full max-w-[220px] px-2 flex flex-col items-center pointer-events-none z-20">
-              {squeezeCount > 0 && (
-                <motion.div
-                  key={squeezeCount}
-                  initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full bg-white/85 backdrop-blur-md px-3 py-1.5 rounded-2xl text-[10px] font-black text-primary border border-primary/20 uppercase tracking-[0.2em] shadow-lg flex flex-col items-center gap-0.5"
-                >
-                  <div className="flex items-center gap-1.5 max-w-full">
-                    <span className="material-symbols-outlined text-[10px] animate-pulse text-secondary">flash_on</span>
-                    <span>{tr(language, `Squeeze ${squeezeCount}`, `按压 ${squeezeCount} 次`)}</span>
-                  </div>
-                  <div className="text-[8px] opacity-60 text-center leading-tight break-words">
-                    {squeezeCount < AI_THRESHOLD 
-                      ? tr(language, `${AI_THRESHOLD - squeezeCount} more to AI Space`, `再按 ${AI_THRESHOLD - squeezeCount} 次进入 AI 空间`)
-                      : tr(language, `${GAME_THRESHOLD - squeezeCount} more to Game Mode`, `再按 ${GAME_THRESHOLD - squeezeCount} 次进入游戏模式`)}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Squishy Bird (XJTLU Liverbird) SVG */}
-            <svg viewBox="0 0 200 250" className="w-full h-full drop-shadow-[0_40px_60px_rgba(var(--primary),0.2)] overflow-visible relative z-10">
-              
-              {/* Feet */}
-              <motion.g 
-                animate={{ 
-                  y: isJiggling ? [0, 5, 0] : [0, 2, 0],
-                  scale: isJiggling ? [1, 1.2, 1] : 1
-                }} 
-                transition={{ duration: isJiggling ? 0.2 : 4, repeat: isJiggling ? 0 : Infinity }}
-              >
-                <rect x="58" y="195" width="40" height="26" rx="13" fill="#fbbf24" />
-                <rect x="102" y="195" width="40" height="26" rx="13" fill="#fbbf24" />
-              </motion.g>
-
-              {/* Main Body Scale/Squish */}
-              <motion.g 
-                animate={{ 
-                  scaleY: isJiggling ? [1, 0.7, 1.3, 1] : [1, 0.98, 1],
-                  scaleX: isJiggling ? [1, 1.3, 0.7, 1] : [1, 1.02, 1],
-                  y: isJiggling ? [0, 10, -5, 0] : [0, 6, 0]
-                }} 
-                transition={{ 
-                  duration: isJiggling ? 0.4 : 4, 
-                  repeat: isJiggling ? 0 : Infinity,
-                  ease: "easeInOut"
-                }}
-                style={{ transformOrigin: "100px 200px" }}
-              >
-                {/* Wing left */}
-                <motion.path 
-                  d="M30 145 C 10 150, -5 170, 5 190 C 15 200, 35 180, 45 165 Z" 
-                  fill="#1d4ed8" 
-                  animate={{ rotate: [0, 5, 0] }}
-                  style={{ transformOrigin: "30px 145px" }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                />
-                
-                {/* Wing right */}
-                <motion.path 
-                  d="M170 145 C 190 150, 205 170, 195 190 C 185 200, 165 180, 155 165 Z" 
-                  fill="#1d4ed8" 
-                  animate={{ rotate: [0, -5, 0] }}
-                  style={{ transformOrigin: "170px 145px" }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                />
-
-                {/* Left hand / white globe */}
-                <circle cx="10" cy="188" r="14" fill="#ffffff" />
-                {/* Right hand / white globe */}
-                <circle cx="190" cy="188" r="14" fill="#ffffff" />
-
-                {/* White Body Base */}
-                <path d="M30 110 C 30 20, 170 20, 170 110 L170 155 C 170 200, 140 215, 100 215 C 60 215, 30 200, 30 155 Z" fill="#ffffff" />
-
-                {/* Tuft (hair/feather curl on top) */}
-                <path d="M100 28 C 95 -15, 135 -10, 120 15 C 113 22, 105 25, 103 28 Z" fill="#f8fafc" />
-
-                {/* Blue Shirt Overlay */}
-                <path d="M30 155 C 30 200, 60 215, 100 215 C 140 215, 170 200, 170 155 L170 135 C 140 120, 60 120, 30 135 Z" fill="#1d4ed8" />
-                
-                {/* Shirt Text */}
-                <text x="100" y="180" textAnchor="middle" fill="#ffffff" fontSize="32" fontWeight="900" fontFamily="system-ui, sans-serif" letterSpacing="3">XJTLU</text>
-
-                {/* Face Group */}
-                <g>
-                  {/* Eyes (Blinking) */}
-                  <motion.ellipse 
-                    cx="74" cy="98" rx="6" ry="14" fill="#1e293b" 
-                    animate={{ scaleY: [1, 0.1, 1] }}
-                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 3 }}
-                    style={{ transformOrigin: "74px 98px" }}
-                  />
-                  <motion.ellipse 
-                    cx="126" cy="98" rx="6" ry="14" fill="#1e293b" 
-                    animate={{ scaleY: [1, 0.1, 1] }}
-                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 3 }}
-                    style={{ transformOrigin: "126px 98px" }}
-                  />
-
-                  {/* Cheeks (Blush) */}
-                  <ellipse cx="46" cy="104" rx="12" ry="8" fill="#f9a8d4" />
-                  <ellipse cx="154" cy="104" rx="12" ry="8" fill="#f9a8d4" />
-
-                  {/* Beak */}
-                  <ellipse cx="100" cy="110" rx="18" ry="22" fill="#eab308" />
-                </g>
-              </motion.g>
-            </svg>
+            <HealingAnimal kind={companion} isJiggling={isJiggling} />
             
             <motion.div 
               initial={{ opacity: 0 }}
               whileHover={{ opacity: 1 }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
-              <div className="bg-primary/90 text-on-primary px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-                {tr(language, 'Squeeze Me!', '按我一下')}
+              <div className="bg-primary/90 text-on-primary px-4 py-2 rounded-full text-[10px] font-semibold tracking-wide shadow-lg">
+                {tr(language, 'Say hello with a soft press', '轻轻按一下，和我打个招呼')}
               </div>
             </motion.div>
           </motion.div>
 
-          <div className="bg-surface-container-lowest/80 backdrop-blur px-6 py-2 rounded-full flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">{tr(language, 'Live: Bode Bird Core', '实时：Bode 鸟核心')}</span>
+            <div className="bg-white/75 backdrop-blur px-4 py-2.5 rounded-full flex items-center gap-2 shadow-sm border border-white/80">
+            <span className="w-2 h-2 rounded-full bg-secondary/70" />
+            <span className="text-xs font-medium text-on-surface-variant">{tr(language, 'Your companion is here · press at your pace', '伙伴一直陪着你 · 按自己的节奏来')}</span>
           </div>
+          <div className="relative z-10 mt-4 w-full max-w-sm"><CompanionMoodPicker kind={companion} language={language} /></div>
         </motion.section>
 
         {/* Action List */}
@@ -489,8 +441,8 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
           className="grid grid-cols-1 gap-6"
         >
           {[
-            { id: 'mindful-care', icon: 'eco', title: tr(language, 'Mindful Care', '正念陪伴'), desc: tr(language, 'Daily care routines to maintain bird happiness.', '每日互动，提升小鸟幸福感。'), color: 'text-secondary bg-secondary-container/20' },
-            { id: 'connect', icon: 'forum', title: tr(language, 'Community', '社区'), desc: tr(language, 'Connect with other Sanctuary keepers globally.', '和其他用户分享你的状态与心情。'), color: 'text-tertiary bg-tertiary-container/20' }
+            { id: 'mindful-care', icon: null, title: tr(language, 'A little mindful care', '给自己一点正念时间'), desc: tr(language, 'Small, gentle practices for the moment you are in.', '用简单温柔的小练习，陪伴此刻的自己。'), color: 'text-secondary bg-secondary-container/60' },
+            { id: 'connect', icon: 'forum', title: tr(language, 'Share a quiet moment', '分享此刻的心情'), desc: tr(language, 'A kind space to leave a thought or read someone else’s.', '留下一句话，或读读别人的小小心情。'), color: 'text-tertiary bg-tertiary-container/70' }
           ].map((item, i) => (
             <motion.button 
               key={i}
@@ -499,23 +451,23 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
                 visible: { opacity: 1, x: 0, scale: 1 }
               }}
               whileHover={{ 
-                x: 15, 
-                scale: 1.02,
-                backgroundColor: "rgba(255, 255, 255, 0.7)",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.05)"
+                x: 4,
+                scale: 1.01,
+                backgroundColor: "rgba(255, 255, 255, 0.82)",
+                boxShadow: "0 16px 34px rgba(57,72,61,0.08)"
               }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onNavigate(item.id as Screen)}
-              className="w-full bg-white/30 backdrop-blur-md p-8 rounded-[2rem] border border-white/20 shadow-sm flex items-center gap-8 text-left transition-all"
+              className="w-full bg-white/55 backdrop-blur-md p-5 sm:p-6 rounded-[1.65rem] border border-white/75 shadow-sm flex items-center gap-4 sm:gap-6 text-left transition-all"
             >
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 ${item.color} shadow-inner`}>
-                <span className="material-symbols-outlined text-3xl">{item.icon}</span>
-              </div>
+              {item.icon && <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0 ${item.color}`}>
+                <AppIcon className="app-icon text-2xl sm:text-3xl">{item.icon}</AppIcon>
+              </div>}
               <div className="flex-grow">
-                <h4 className="font-serif italic text-2xl text-on-surface mb-1">{item.title}</h4>
-                <p className="text-sm text-on-surface-variant font-medium leading-relaxed">{item.desc}</p>
+                <h4 className="font-serif text-xl sm:text-2xl text-on-surface mb-1">{item.title}</h4>
+                <p className="text-xs sm:text-sm text-on-surface-variant font-medium leading-relaxed">{item.desc}</p>
               </div>
-              <span className="material-symbols-outlined text-outline-variant/40">chevron_right</span>
+              <AppIcon className="app-icon text-on-surface-variant">chevron_right</AppIcon>
             </motion.button>
           ))}
         </motion.div>
@@ -528,14 +480,15 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
         whileHover={{ scale: 1.1, rotate: 90 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => onNavigate('ai-space')}
-        className="fixed bottom-28 right-8 w-20 h-20 rounded-full bg-primary text-on-primary shadow-2xl shadow-primary/40 flex items-center justify-center z-40 border-4 border-white/20 backdrop-blur-md"
+        aria-label={tr(language, 'Open AI companion', '打开 AI 陪伴')}
+        className="fixed bottom-24 right-5 sm:right-8 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg shadow-primary/20 flex items-center justify-center z-40 border-4 border-[#f2f7fc]/80 backdrop-blur-md"
       >
-        <span className="material-symbols-outlined text-4xl">add</span>
+        <AppIcon className="app-icon text-2xl">psychology</AppIcon>
       </motion.button>
 
       {isProfileOpen && (
         <div className="fixed inset-0 z-[80] bg-black/35 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-white/40 p-6 space-y-4">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border border-white/40 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-on-surface">{tr(language, 'Edit Profile', '编辑资料')}</h3>
               <button
@@ -543,14 +496,14 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
                 onClick={() => setIsProfileOpen(false)}
                 className="w-8 h-8 rounded-full hover:bg-black/5"
               >
-                <span className="material-symbols-outlined text-lg">close</span>
+                <AppIcon className="app-icon text-lg">close</AppIcon>
               </button>
             </div>
 
             {profileLoading ? (
               <p className="text-sm text-on-surface-variant">{tr(language, 'Loading profile...', '正在加载资料...')}</p>
             ) : (
-              <div className="space-y-3">
+                <div className="space-y-3">
                 <div>
                   <label className="text-xs font-bold text-on-surface-variant">{tr(language, 'Name', '姓名')}</label>
                   <input
@@ -589,6 +542,7 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
                   />
                 </div>
                 {profileError && <p className="text-xs text-red-600">{profileError}</p>}
+                <PasswordSettings language={language} />
                 <div className="flex items-center gap-2 pt-2">
                   <button
                     type="button"

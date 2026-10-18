@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 260" fill="none">
+  <defs>
+    <linearGradient id="pigBody" x1="63" y1="79" x2="176" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE1E2"/>
+      <stop offset=".52" stop-color="#F6C4C8"/>
+      <stop offset="1" stop-color="#E8A6B0"/>
+    </linearGradient>
+    <linearGradient id="pigEar" x1="45" y1="66" x2="82" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7C6CC"/>
+      <stop offset="1" stop-color="#EAA3AF"/>
+    </linearGradient>
+    <radialGradient id="snout" cx="0" cy="0" r="1" gradientTransform="matrix(0 26 -33 0 120 131)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD5D9"/>
+      <stop offset="1" stop-color="#EFAAB5"/>
+    </radialGradient>
+    <linearGradient id="belly" x1="99" y1="149" x2="140" y2="216" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF0EF"/>
+      <stop offset="1" stop-color="#F5D2D1"/>
+    </linearGradient>
+    <filter id="shadow" x="34" y="20" width="172" height="232" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+  <ellipse cx="120" cy="235" rx="66" ry="9" fill="#8295A7" opacity=".14" filter="url(#shadow)"/>
+  <!-- little curled tail peeking out behind the seated body -->
+  <path d="M165 165c24 2 33 18 22 30-8 9-24 6-24-4 0-6 8-9 13-5" stroke="#E9AAB4" stroke-width="9" stroke-linecap="round"/>
+  <!-- tucked haunches -->
+  <ellipse cx="81" cy="198" rx="27" ry="27" fill="url(#pigBody)"/>
+  <ellipse cx="159" cy="198" rx="27" ry="27" fill="url(#pigBody)"/>
+  <!-- compact seated body -->
+  <path d="M75 140c7-23 24-35 45-35s38 12 45 35c8 23 10 48 4 69-5 17-22 26-49 26s-44-9-49-26c-6-21-4-46 4-69Z" fill="url(#pigBody)"/>
+  <path d="M97 156c5-12 13-18 23-18s18 6 23 18c6 15 8 34 3 48-4 11-13 17-26 17s-22-6-26-17c-5-14-3-33 3-48Z" fill="url(#belly)" opacity=".82"/>
+  <!-- little front legs and rounded feet, resting forward -->
+  <path d="M91 166c-3 13-4 27-1 43 2 9 9 14 17 12 7-2 10-8 9-16l-3-28-22-11Z" fill="url(#pigBody)"/>
+  <path d="M149 166c3 13 4 27 1 43-2 9-9 14-17 12-7-2-10-8-9-16l3-28 22-11Z" fill="url(#pigBody)"/>
+  <path d="M85 211c0-8 7-14 16-14h8c7 0 12 5 12 12v8c0 5-4 9-9 9H97c-7 0-12-6-12-15Zm46-2c0-7 5-12 12-12h8c9 0 16 6 16 14 0 9-5 15-12 15h-15c-5 0-9-4-9-9v-8Z" fill="#E8A6B0"/>
+  <path d="M100 217v4m40-4v4" stroke="#CF8793" stroke-width="2" stroke-linecap="round" opacity=".68"/>
+  <!-- head with soft floppy ears -->
+  <path d="M79 78c-18-20-38-11-37 15 1 23 12 42 27 46 12 3 19-8 17-22l-7-39Zm82 0c18-20 38-11 37 15-1 23-12 42-27 46-12 3-19-8-17-22l7-39Z" fill="url(#pigEar)"/>
+  <path d="M52 94c1-13 8-19 16-15 7 4 11 17 11 28 0 9-4 14-9 12-10-4-18-14-18-25Zm136 0c-1-13-8-19-16-15-7 4-11 17-11 28 0 9 4 14 9 12 10-4 18-14 18-25Z" fill="#E88F9D" opacity=".52"/>
+  <path d="M64 83c3-31 26-49 56-49s53 18 56 49l-4 30c-3 27-24 45-52 45s-49-18-52-45l-4-30Z" fill="url(#pigBody)"/>
+  <path d="M81 73c8-20 21-29 39-29s31 9 39 29" stroke="#FFF4F2" stroke-width="5" stroke-linecap="round" opacity=".48"/>
+  <!-- happy closed eyes and rosy cheeks -->
+  <path d="M85 105c4-6 11-6 15 0m40 0c4-6 11-6 15 0" stroke="#76545A" stroke-width="3.4" stroke-linecap="round"/>
+  <ellipse cx="79" cy="120" rx="9" ry="5" fill="#E88F9D" opacity=".36"/>
+  <ellipse cx="161" cy="120" rx="9" ry="5" fill="#E88F9D" opacity=".36"/>
+  <!-- unmistakable little pig snout -->
+  <ellipse cx="120" cy="128" rx="27" ry="21" fill="url(#snout)"/>
+  <ellipse cx="111" cy="129" rx="3.2" ry="5.2" fill="#BD7681" opacity=".82"/>
+  <ellipse cx="129" cy="129" rx="3.2" ry="5.2" fill="#BD7681" opacity=".82"/>
+  <path d="M112 151c5 6 11 7 16 0" stroke="#9E6670" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

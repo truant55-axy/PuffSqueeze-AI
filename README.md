@@ -1,5 +1,11 @@
 # PuffSqueeze AI (Frontend + PHP Backend for Moodle)
 
+## Production preparation
+
+See [长期部署与数据迁移](docs/DEPLOYMENT.md). `deploy/compose.yaml` packages the frontend, PHP-FPM, MariaDB and HTTPS entry point. A server/domain is still required; the project has not been deployed.
+
+APIs now require a sign-in token. Existing accounts remain supported; old ID-only sessions must sign in again. New passwords are hashed, and the preparation script migrates legacy plaintext passwords. Account records use a durable offline upload queue.
+
 This project now includes:
 
 - Frontend: `Vite + React + TypeScript`

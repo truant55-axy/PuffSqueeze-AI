@@ -1,3 +1,4 @@
+import AppIcon from '../components/AppIcon';
 import { motion } from 'motion/react';
 import { AppLanguage, tr } from '../i18n';
 
@@ -11,7 +12,7 @@ export default function PuffZenScreen({ onBack, language }: { onBack: () => void
             onClick={onBack}
             className="w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center"
           >
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
+            <AppIcon className="app-icon text-lg">arrow_back</AppIcon>
           </button>
           <span className="text-white font-bold tracking-wide">Puff Zen</span>
         </div>

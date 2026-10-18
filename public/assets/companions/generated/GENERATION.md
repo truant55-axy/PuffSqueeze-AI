@@ -1,0 +1,30 @@
+# Generated companion assets
+
+Created on 2026-10-14 with the built-in image generation tool. These are AI-generated project assets, not downloaded Kitbitz or OpenGameArt assets. Existing Kitbitz artwork was used only as a visual style reference. The original generated PNG alpha channels were preserved when copying the files into this project.
+
+- `pig-seated-v2.png`: seated pink piglet, folded ears, curly tail, soft dimensional shading.
+- `dog-spaniel-v2.png`: seated cream and caramel spaniel puppy, elongated muzzle, long floppy ears, pale blue collar, canine paws.
+- `cat-cozy-v2.png`: curled-up blue-grey kitten, cream muzzle and delicate whiskers.
+- `penguin-cozy-v2.png`: compact slate-blue baby penguin, pale belly, short golden feet.
+- `owl-cozy-v2.png`: oatmeal and cream baby owl with soft layered plumage.
+- `seagull-cozy-v2.png`: compact white and blue-grey gull with short webbed feet.
+- `dolphin-blue-v2.png`: soft blue dolphin with complete flippers and tail.
+- `puff-bird-v3.png`: original Puff identity in matching soft dimensional style, white body, plain blue clothing, white hands and head tuft.
+- `puff-bird-v4.png`: current Puff, lively waving pose, gently tilted head, smaller smiling beak and curled feather tuft. Generation prompt in `PUFF_V4.md`.
+
+The five additional animal generation prompts, which reference the approved pig and dog, are recorded in `STYLE_SET_V2.md`.
+
+All eight companions use live SVG eye overlays to open their eyes and blink over the closed-eye base artwork. The home screen keeps its press interaction. Other signed-in screens show the selected companion as a draggable floating companion, with a remembered position. Puff's generation prompt and animation notes are in `ANIMATION_V3.md`.
+
+## Pig generation prompt
+
+Use case: stylized-concept. Asset type: full-body animal companion cutout for a soothing light-blue web app. Input image 1 is a STYLE REFERENCE ONLY, depicting our existing Kitbitz animal illustrations: match their smooth 2.5D softly shaded vector-like toy forms, subtle sculpted depth, muted palette, clean edges, restrained highlights, and softly friendly expressions. Create ONE new unmistakable cute pink piglet, comfortably SITTING ON ITS HAUNCHES with short front legs resting down and tiny hooves forward, plump low compact pear-shaped body, a small curly tail visible to the side, triangular gently folded pig ears, unmistakable oval pig snout with two nostrils, small happy curved eyes and a tiny smile. Slight three-quarter view, rotated just 15 degrees, full body visible. The pig must be seated rather than standing upright, have pig anatomy rather than humanoid anatomy, and be charming, calm, rounded but well-proportioned. Pastel dusty pink and cream highlights, softly darker rose hooves, subtle directional shading like the penguin and owl. Do not copy any of the reference animals. Not a flat emoji, not pixel art, not photorealistic, no realistic fur, no thick outline, no props, no text, no collar, no scenery. Center the character occupying about 82 percent of a square canvas, leave clear margins around its entire silhouette and tail, no cropping. GENUINELY TRANSPARENT BACKGROUND with clean alpha edges, no checkerboard, no solid backdrop, no ground plane; only the pig cutout. High quality production-ready PNG.
+
+## Dog generation prompt
+
+Use case: stylized-concept. Asset type: full-body dog companion cutout for a soothing light-blue web app. Input image 1 is STYLE REFERENCE ONLY showing our existing Kitbitz cat, penguin, owl: match their smooth 2.5D softly shaded vector-like toy forms, subtle sculpted depth, muted palette, clean edges, restrained highlights, friendly expressions. Input image 2 is a recently generated seated pig in the SAME COMPANION SET: the new dog should clearly belong to this same set with the same soft shading quality, proportions, rendering medium, and calm friendly appeal. Generate ONE unmistakable cute golden-cream spaniel-like puppy, comfortably seated on its haunches, short front paws resting down and a tail curving around its side. IMPORTANT anatomically distinctive dog head: narrower elongated gently tapered forehead, NOT a round ball, a clear protruding canine muzzle visible in a slight 20 degree three-quarter view, dark triangular dog nose, soft smiling mouth with a tiny pink tongue, small bright dark eyes, LONG floppy ears hanging along sides of cheeks below the jaw. The ears must be long dog ears, not round monkey ears. Warm muted cream fur, caramel-brown ears, pale cream chest, small light-blue collar without a large tag. Smooth softly sculpted illustration surfaces, no realistic fur texture. Match the pig's seated, cozy proportions but distinguish species. Full body, centered, occupying about 82 percent of square canvas, complete ears paws tail visible and clear margins. GENUINELY TRANSPARENT BACKGROUND, clean alpha edges, no checkerboard, no scenery, no ground plane, no additional animal, no text, no watermark, no thick outlines, no flat emoji, no monkey features, no spherical head. Production-ready high-quality PNG.
+
+## Dog paw correction prompt
+
+Use case: precise-object-edit. Input image 1 is the EDIT TARGET, the generated seated spaniel puppy. Change ONLY the paw ends: the dark brown split hoof-like ends currently look pig-like. Replace ALL FOUR hoof-like paw tips with proper canine paws made of the same warm cream-golden fur as the legs. Rounded soft dog feet, no visible soles or paw pads because the paws rest on the ground, 2-3 VERY SUBTLE short curved toe-divider creases on the top of each foot in light warm tan. NO brown hooves, NO cloven hoof shapes, NO brown caps, NO prominent claws. Preserve the exact dog identity, head shape, long caramel ears, happy closed eyes, muzzle and tongue, light blue collar, body, tail, pose, full silhouette, framing, shading style, materials, lighting, and palette. Preserve the transparent background and clean alpha. Keep every element other than the feet unchanged. Production-ready transparent PNG.
+

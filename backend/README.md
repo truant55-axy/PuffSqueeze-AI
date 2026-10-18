@@ -1,5 +1,13 @@
 # PuffSqueeze PHP Backend (for Moodle MySQL)
 
+## Production and authentication update
+
+See [deployment guide](../docs/DEPLOYMENT.md). The Dockerfile now runs PHP-FPM behind Nginx; it no longer exposes PHP's development server.
+
+Except `/api/health`, `/api/login` and `/api/register`, requests require `Authorization: Bearer <care_token returned by login>`. User identity comes from this token; a client-supplied `user_id` never selects another account. Device firmware also needs authenticated requests.
+
+`POST /api/logout` revokes the current token. `GET/POST /api/user-data` restores account documents and accepts idempotent queued records. Run `php backend/scripts/prepare-production.php` from the project root to install additive schemas and migrate legacy passwords after backing up the database. This command has not been run as part of the code changes.
+
 ## 1) Prepare environment
 
 1. Copy `backend/.env.example` to `backend/.env`
@@ -56,7 +64,7 @@ VITE_API_BASE_URL=http://localhost:8080
 {
   "email": "user@example.com",
   "display_name": "Alice",
-  "password": "123456"
+  "password": "ReplaceWithYourOwn123!"
 }
 ```
 
@@ -65,7 +73,7 @@ VITE_API_BASE_URL=http://localhost:8080
 ```json
 {
   "email": "user@example.com",
-  "password": "123456"
+  "password": "ReplaceWithYourOwn123!"
 }
 ```
 

@@ -6,3 +6,11 @@ coverage/
 *.log
 .env*
 !.env.example
+!.env.production
+!deploy/.env.example
+deploy/backups/
+deploy/artifacts/
+**/.wrangler/
+**/.dev.vars*
+deploy/wireless/.tools/
+*.sql.gz

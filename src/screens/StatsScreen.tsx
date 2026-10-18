@@ -1,3 +1,4 @@
+import AppIcon from '../components/AppIcon';
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { 
@@ -44,9 +45,9 @@ export default function StatsScreen({ onBack, language }: { onBack: () => void; 
               onClick={onBack}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors mr-1"
             >
-              <span className="material-symbols-outlined text-on-surface">arrow_back_ios_new</span>
+              <AppIcon className="app-icon text-on-surface">arrow_back_ios_new</AppIcon>
             </button>
-            <span className="material-symbols-outlined text-primary">touch_app</span>
+            <AppIcon className="app-icon text-primary">touch_app</AppIcon>
             <h1 className="text-xl font-bold text-primary font-headline tracking-tight uppercase tracking-wider">Squeeze Pulse</h1>
           </div>
           <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/50 shadow-inner">
@@ -68,7 +69,7 @@ export default function StatsScreen({ onBack, language }: { onBack: () => void; 
           className="bg-white/50 backdrop-blur-2xl rounded-[3rem] p-10 border border-white/40 shadow-xl mb-8 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
-            <span className="material-symbols-outlined text-[120px]">touch_app</span>
+            <AppIcon className="app-icon text-[120px]">touch_app</AppIcon>
           </div>
           
           <div className="relative z-10">
@@ -157,7 +158,7 @@ export default function StatsScreen({ onBack, language }: { onBack: () => void; 
               <span className="text-[10px] px-2 py-1 bg-white/20 rounded-lg font-black uppercase tracking-widest">Live</span>
             </div>
           </div>
-          <span className="material-symbols-outlined text-5xl relative z-10 opacity-40">equalizer</span>
+          <AppIcon className="app-icon text-5xl relative z-10 opacity-40">equalizer</AppIcon>
           
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
         </motion.div>

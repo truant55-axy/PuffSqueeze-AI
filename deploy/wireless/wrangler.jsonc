@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "puffsqueeze-grip",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+  "durable_objects": {
+    "bindings": [{ "name": "GRIP_ROOMS", "class_name": "GripRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GripRoom"] }]
+}

@@ -1,3 +1,4 @@
+import AppIcon from '../components/AppIcon';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getChatResponse } from '../services/geminiService';
@@ -6,9 +7,18 @@ import { getAiReport, getDashboard } from '../services/backendService';
 import { getCurrentUserId } from '../services/session';
 import ProfileAvatarMenu from '../components/ProfileAvatarMenu';
 import { AppLanguage, tr } from '../i18n';
+import { saveAccountItem, reportStorageError } from '../services/accountSync';
 
 export default function AISpaceScreen({ language }: { language: AppLanguage }) {
-  const [messages, setMessages] = useState<Message[]>([
+  const userId = getCurrentUserId();
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`puffsqueeze_ai_messages_${userId}`) || 'null');
+      if (Array.isArray(saved) && saved.length && saved.every(m => m && typeof m.id === 'string' && typeof m.content === 'string' && ['user','assistant'].includes(m.role) && Number.isFinite(new Date(m.timestamp).getTime()))) {
+        return saved.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
+      }
+    } catch { /* Keep unreadable storage intact until the user explicitly sends a message. */ }
+    return [
     {
       id: '1',
       role: 'assistant',
@@ -19,7 +29,8 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
       ),
       timestamp: new Date(),
     },
-  ]);
+    ];
+  });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -34,7 +45,11 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const userId = getCurrentUserId();
+  useEffect(() => {
+    if (messages.length <= 1) return;
+    try { saveAccountItem(`puffsqueeze_ai_messages_${userId}`, JSON.stringify(messages), userId); }
+    catch { reportStorageError(); }
+  }, [messages, userId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -174,7 +189,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
       <header className="bg-white/10 backdrop-blur-2xl border-b border-white/10 shrink-0">
         <div className="flex items-center justify-between px-8 py-2 w-full max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary">waves</span>
+            <AppIcon className="app-icon text-primary">waves</AppIcon>
             <h1 className="text-xl font-bold text-primary font-headline tracking-tight">PuffSqueeze AI</h1>
           </div>
           <ProfileAvatarMenu userId={userId} sizeClassName="w-8 h-8" language={language} />
@@ -193,7 +208,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
             onClick={() => void handleOpenReport()}
             className="group relative px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary font-black rounded-full shadow-xl shadow-primary/20 flex items-center gap-2 text-xs shrink-0"
           >
-            <span className="material-symbols-outlined text-sm">analytics</span>
+            <AppIcon className="app-icon text-sm">analytics</AppIcon>
             <span>{tr(language, 'Report', '报告')}</span>
           </motion.button>
         </section>
@@ -208,7 +223,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                 className={`flex flex-col ${msg.role === 'assistant' ? 'items-start' : 'items-end'} gap-2 max-w-[90%] md:max-w-[80%] ${msg.role === 'user' ? 'ml-auto' : ''}`}
               >
                 <div className="flex items-center gap-2 mb-0.5 px-3">
-                  {msg.role === 'assistant' && <span className="material-symbols-outlined text-primary text-xs">psychology</span>}
+                  {msg.role === 'assistant' && <AppIcon className="app-icon text-primary text-xs">psychology</AppIcon>}
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
                     {msg.role === 'assistant' ? 'Healing AI' : tr(language, 'You', '你')}
                   </span>
@@ -234,7 +249,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                             key={attachment.id}
                             className="flex items-center gap-3 rounded-2xl bg-white/20 border border-white/30 px-4 py-3"
                           >
-                            <span className="material-symbols-outlined text-xl">description</span>
+                            <AppIcon className="app-icon text-xl">description</AppIcon>
                             <div className="min-w-0">
                               <p className="truncate text-sm font-bold">{attachment.name}</p>
                               <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
@@ -278,7 +293,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                       <img src={attachment.dataUrl} alt={attachment.name} className="h-12 w-12 rounded-xl object-cover" />
                     ) : (
                       <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                        <span className="material-symbols-outlined text-xl">description</span>
+                        <AppIcon className="app-icon text-xl">description</AppIcon>
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
@@ -291,7 +306,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                       className="h-8 w-8 rounded-full hover:bg-white/60 text-on-surface-variant flex items-center justify-center"
                       aria-label={tr(language, 'Remove attachment', '移除附件')}
                     >
-                      <span className="material-symbols-outlined text-base">close</span>
+                      <AppIcon className="app-icon text-base">close</AppIcon>
                     </button>
                   </div>
                 ))}
@@ -305,7 +320,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                 className="w-12 h-12 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-white/50 transition-all"
                 aria-label={tr(language, 'Upload photo or file', '上传照片或文件')}
               >
-                <span className="material-symbols-outlined text-2xl">add_circle</span>
+                <AppIcon className="app-icon text-2xl">add_circle</AppIcon>
               </button>
             <input
               className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant/40 font-body text-base font-medium"
@@ -321,7 +336,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
               }}
             />
             <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={isLoading || (!input.trim() && attachments.length === 0)} className={`w-12 h-12 flex items-center justify-center rounded-full bg-primary text-on-primary ${isLoading || (!input.trim() && attachments.length === 0) ? 'opacity-50' : ''}`}>
-              <span className="material-symbols-outlined text-2xl">send</span>
+              <AppIcon className="app-icon text-2xl">send</AppIcon>
             </motion.button>
             </div>
           </div>
@@ -334,11 +349,11 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
             <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }} className="w-full max-w-2xl max-h-[82vh] overflow-hidden rounded-3xl bg-white/95 border border-white/50 shadow-2xl">
               <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-lg">insights</span>
+                  <AppIcon className="app-icon text-primary text-lg">insights</AppIcon>
                   <h3 className="text-lg font-black text-on-surface">{tr(language, 'AI Companion Report', 'AI陪伴报告')}</h3>
                 </div>
                 <button type="button" onClick={() => setIsReportOpen(false)} className="w-8 h-8 rounded-full hover:bg-black/5 text-on-surface-variant">
-                  <span className="material-symbols-outlined text-lg">close</span>
+                  <AppIcon className="app-icon text-lg">close</AppIcon>
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[65vh]">

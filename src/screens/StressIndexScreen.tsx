@@ -1,3 +1,4 @@
+import AppIcon from '../components/AppIcon';
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import {
@@ -50,9 +51,9 @@ export default function StressIndexScreen({ onBack, language }: { onBack: () => 
               onClick={onBack}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors mr-1"
             >
-              <span className="material-symbols-outlined text-on-surface">arrow_back_ios_new</span>
+              <AppIcon className="app-icon text-on-surface">arrow_back_ios_new</AppIcon>
             </button>
-            <span className="material-symbols-outlined text-primary">analytics</span>
+            <AppIcon className="app-icon text-primary">analytics</AppIcon>
             <h1 className="text-xl font-bold text-primary font-headline tracking-tight uppercase tracking-wider">Stress Index</h1>
           </div>
           <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/50 shadow-inner">
@@ -149,7 +150,7 @@ export default function StressIndexScreen({ onBack, language }: { onBack: () => 
         >
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
-              <span className="material-symbols-outlined text-primary">psychology</span>
+              <AppIcon className="app-icon text-primary">psychology</AppIcon>
               <h3 className="font-serif italic text-2xl text-primary">AI Suggestion</h3>
             </div>
             <p className="text-xs opacity-80 leading-relaxed font-medium">{suggestion}</p>

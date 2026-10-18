@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon';
 import { motion } from 'motion/react';
 import { Screen } from '../types';
 import { AppLanguage, tr } from '../i18n';
@@ -30,12 +31,12 @@ export default function BottomNav({ activeScreen, onNavigate, language }: Bottom
                 : 'text-outline hover:text-primary'
             }`}
           >
-            <span 
-              className={`material-symbols-outlined mb-1 transition-all duration-500 ${isActive ? 'fill-1' : ''}`}
+            <AppIcon 
+              className={`app-icon mb-1 transition-all duration-500 ${isActive ? 'fill-1' : ''}`}
               style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
             >
               {item.icon}
-            </span>
+            </AppIcon>
             <span>{item.label}</span>
             {isActive && (
               <motion.div

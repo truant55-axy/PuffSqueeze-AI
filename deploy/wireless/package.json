@@ -1,0 +1,10 @@
+{
+  "name": "puffsqueeze-wireless",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "login": "wrangler login",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": { "wrangler": "4.151.0" }
+}

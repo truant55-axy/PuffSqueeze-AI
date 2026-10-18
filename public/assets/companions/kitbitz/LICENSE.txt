@@ -1,0 +1,15 @@
+Kitbitz companion illustrations
+
+Source: https://kitbitz.art/ (KITS asset library: https://github.com/CaptExcellent/kits-library-assets)
+License: CC0 1.0 Universal, https://creativecommons.org/publicdomain/zero/1.0/
+The Kitbitz website states its illustration library is free for commercial use under CC0. Attribution is not required; the source is recorded here for provenance.
+
+Original assets in this folder:
+- cat.svg — Halloween kit
+- pig.svg — Medieval kit
+- penguin.svg — Winter kit
+- owl.svg — Western kit
+- seagull.svg — Pirate kit
+- dolphin-blue.svg — Barbieland kit, with green tones recolored to blue for this project
+- pig-cute.svg — Medieval kit, with soft blush details added for this project
+- pig-sitting.svg — original seated pig companion drawn for this project

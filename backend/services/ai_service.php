@@ -40,14 +40,14 @@ function geminiChat(array $history, string $message, string $strikeLevel, array 
     ]);
 
     $contents = [];
-    foreach ($history as $item) {
+    foreach (array_slice($history, -30) as $item) {
         if (!is_array($item)) {
             continue;
         }
         $role = ($item['role'] ?? 'user') === 'model' ? 'model' : 'user';
         $text = '';
         if (isset($item['parts'][0]['text']) && is_string($item['parts'][0]['text'])) {
-            $text = $item['parts'][0]['text'];
+            $text = mb_substr($item['parts'][0]['text'], 0, 6000);
         }
         if ($text !== '') {
             $contents[] = [

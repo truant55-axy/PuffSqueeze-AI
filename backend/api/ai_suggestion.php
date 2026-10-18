@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../services/auth_service.php';
 require_once __DIR__ . '/../services/metrics_service.php';
 require_once __DIR__ . '/../services/ai_service.php';
 
 applyCors();
 requireMethod('GET');
 
-$userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
+$userId = authenticatedUserId();
 if ($userId <= 0) {
     jsonResponse(['success' => false, 'message' => 'user_id is required'], 422);
 }

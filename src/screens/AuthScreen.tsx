@@ -1,3 +1,4 @@
+import AppIcon from '../components/AppIcon';
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { login, register } from '../services/backendService';
@@ -35,12 +36,16 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
     }
 
     setIsSubmitting(true);
+    if (isRegisterMode && password.length < 8) {
+      setError(tr(language, 'Use a password of at least 8 characters.', '密码至少需要 8 个字符。'));
+      setIsSubmitting(false); return;
+    }
     setError('');
     try {
       const user = isRegisterMode
         ? await register(email.trim(), displayName.trim(), password)
         : await login(email.trim(), password);
-      setCurrentUserId(user.id);
+      setCurrentUserId(user.id, user.care_token);
       onLogin();
     } catch (e: any) {
       setError(e?.message || tr(language, 'Authentication failed', '认证失败'));
@@ -53,8 +58,7 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
     <div className="absolute top-0 bottom-0 left-0 right-0 z-50 flex flex-col bg-background overflow-hidden overscroll-none">
       <header className="flex-none p-5 md:p-8 w-full flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-2xl sm:text-3xl">waves</span>
-          <span className="text-xl sm:text-2xl font-bold text-primary tracking-tight font-headline">PuffSqueeze AI</span>
+          <span className="text-xl sm:text-2xl font-semibold text-primary tracking-tight font-headline">PuffSqueeze</span>
         </div>
       </header>
 
@@ -67,7 +71,7 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
               transition={{ duration: 0.6 }}
               className="font-headline text-[32px] sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-on-surface tracking-tight leading-tight"
             >
-              Ready to <br className="hidden md:block" />release and <span className="text-primary italic">Squeeze?</span>
+              {tr(language, 'A softer moment,', '给自己一点')} <br className="hidden md:block" /><span className="text-primary italic">{tr(language, 'just for you.', '温柔时间。')}</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -75,7 +79,7 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-on-surface-variant text-xs md:text-sm mt-3 md:mt-4 leading-relaxed max-w-[280px] sm:max-w-xs mx-auto md:mx-0"
             >
-              {tr(language, 'Your sanctuary is waiting. Connect with Bode and start your PuffSqueeze session.', '你的心灵栖息地已准备好。连接 Bode，开始你的 PuffSqueeze 旅程。')}
+              {tr(language, 'A quiet little space to pause, gently check in, and move at your own pace.', '在这里轻轻停一停，感受此刻的自己，再按自己的节奏慢慢来。')}
             </motion.p>
           </section>
 
@@ -83,7 +87,7 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="w-full max-w-[320px] sm:max-w-[360px] flex-none bg-surface-container-lowest rounded-2xl p-5 sm:p-6 editorial-shadow relative shrink-0"
+            className="w-full max-w-[320px] sm:max-w-[360px] flex-none bg-white/75 backdrop-blur-xl border border-white/80 rounded-[1.65rem] p-5 sm:p-6 editorial-shadow relative shrink-0"
           >
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary-container rounded-full opacity-20 blur-2xl pointer-events-none"></div>
 
@@ -120,7 +124,7 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline-variant text-[18px]">mail</span>
+                    <AppIcon className="app-icon absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">mail</AppIcon>
                   </div>
                 </div>
 
@@ -136,7 +140,7 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline-variant text-[18px]">lock_open</span>
+                    <AppIcon className="app-icon absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">lock_open</AppIcon>
                   </div>
                 </div>
               </div>
@@ -145,12 +149,11 @@ export default function AuthScreen({ onLogin, language }: AuthScreenProps) {
 
               <div className="space-y-3 pt-1">
                 <button
-                  className="w-full py-3 rounded-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold text-sm liquid-motion hover:scale-[1.02] shadow-lg shadow-primary/10 flex items-center justify-center gap-1.5 disabled:opacity-60"
+                  className="w-full py-3 rounded-full bg-primary text-on-primary font-headline font-semibold text-sm liquid-motion hover:bg-primary/90 shadow-lg shadow-primary/15 flex items-center justify-center gap-1.5 disabled:opacity-60"
                   type="submit"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? tr(language, 'Please wait...', '请稍候...') : isRegisterMode ? tr(language, 'Create Account', '创建账号') : tr(language, 'Enter Sanctuary', '进入疗愈空间')}
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
 
                 <div className="relative flex items-center justify-center py-0.5">

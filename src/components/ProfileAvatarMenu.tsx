@@ -1,3 +1,5 @@
+import AppIcon from './AppIcon';
+import PasswordSettings from './PasswordSettings';
 import { useEffect, useState } from 'react';
 import { getProfile, updateProfile } from '../services/backendService';
 import { clearCurrentUserId } from '../services/session';
@@ -123,7 +125,7 @@ export default function ProfileAvatarMenu({
                     onClick={() => setIsOpen(false)}
                     className="w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center"
                   >
-                    <span className="material-symbols-outlined text-lg">close</span>
+                    <AppIcon className="app-icon text-lg">close</AppIcon>
                   </button>
                 </div>
 
@@ -170,6 +172,7 @@ export default function ProfileAvatarMenu({
                         />
                       </div>
                       {error && <p className="text-xs text-red-600">{error}</p>}
+                      <PasswordSettings language={language} />
                       <div className="flex items-center gap-2 pt-2">
                         <button
                           type="button"

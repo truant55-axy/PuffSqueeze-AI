@@ -1,4 +1,4 @@
-export type Screen = 'auth' | 'home' | 'ai-space' | 'connect' | 'game' | 'mindful-care' | 'vitals-check' | 'stats' | 'stress-index' | 'puff-zen' | 'stress-questionnaire' | 'treehole-poetry';
+export type Screen = 'auth' | 'home' | 'ai-space' | 'connect' | 'game' | 'mindful-care' | 'vitals-check' | 'stats' | 'stress-index' | 'puff-zen' | 'aviator' | 'fishing' | 'stress-questionnaire' | 'treehole-poetry';
 
 export interface Message {
   id: string;

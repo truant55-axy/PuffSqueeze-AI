@@ -1,3 +1,7 @@
+import { recordActivity, flushAccountSync } from './accountSync';
+import { apiFetch } from './apiFetch';
+import { API_BASE } from './apiBase';
+
 export interface WeeklyMetric {
   date: string;
   day: string;
@@ -18,6 +22,7 @@ export interface AuthUser {
   id: number;
   email: string;
   display_name: string;
+  care_token?: string;
 }
 
 export interface UserProfile {
@@ -61,8 +66,7 @@ export interface LatestSqueezeData {
   received_at: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-const M5_API_BASE = import.meta.env.VITE_M5_API_BASE_URL || 'http://localhost:8090';
+const M5_API_BASE = import.meta.env.VITE_M5_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8090' : '');
 
 async function parseJson(res: Response) {
   const data = await res.json();
@@ -73,45 +77,32 @@ async function parseJson(res: Response) {
 }
 
 export async function getDashboard(userId: number): Promise<DashboardData> {
-  const res = await fetch(`${API_BASE}/api/dashboard?user_id=${userId}`);
+  const res = await apiFetch(`${API_BASE}/api/dashboard?user_id=${userId}`);
   const data = await parseJson(res);
   return data.data as DashboardData;
 }
 
 export async function recordSqueezeEvent(userId: number, strikeValue: number): Promise<DashboardData> {
-  const res = await fetch(`${API_BASE}/api/squeeze-event`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      user_id: userId,
-      device_id: 'M5StickCPlus',
-      strike_value: strikeValue,
-      raw_data: {
-        simulated: true,
-        client_time: new Date().toISOString(),
-      },
-    }),
-  });
-  const data = await parseJson(res);
-  return data.data.dashboard as DashboardData;
+  const saved = await recordActivity('squeeze', { device_id: 'M5StickCPlus', strike_value: strikeValue, raw_data: { simulated: true, client_time: new Date().toISOString() } }, userId);
+  if (!saved) throw new Error('Device storage unavailable; squeeze could not be queued');
+  if (!await flushAccountSync()) throw new Error('Squeeze saved on this device; waiting to sync');
+  return getDashboard(userId);
 }
 
 export async function getAiSuggestion(userId: number): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/ai/suggestion?user_id=${userId}`);
+  const res = await apiFetch(`${API_BASE}/api/ai/suggestion?user_id=${userId}`);
   const data = await parseJson(res);
   return data.data.suggestion as string;
 }
 
 export async function getAiReport(userId: number, lang: 'en' | 'zh' = 'en'): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/ai/report?user_id=${userId}&lang=${lang}`);
+  const res = await apiFetch(`${API_BASE}/api/ai/report?user_id=${userId}&lang=${lang}`);
   const data = await parseJson(res);
   return data.data.report as string;
 }
 
 export async function login(email: string, password: string): Promise<AuthUser> {
-  const res = await fetch(`${API_BASE}/api/login`, {
+  const res = await apiFetch(`${API_BASE}/api/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -120,13 +111,13 @@ export async function login(email: string, password: string): Promise<AuthUser> 
       email,
       password,
     }),
-  });
+  }, false);
   const data = await parseJson(res);
   return data.data as AuthUser;
 }
 
 export async function register(email: string, displayName: string, password: string): Promise<AuthUser> {
-  const res = await fetch(`${API_BASE}/api/register`, {
+  const res = await apiFetch(`${API_BASE}/api/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -136,13 +127,13 @@ export async function register(email: string, displayName: string, password: str
       display_name: displayName,
       password,
     }),
-  });
+  }, false);
   const data = await parseJson(res);
   return data.data as AuthUser;
 }
 
 export async function getProfile(userId: number): Promise<UserProfile> {
-  const res = await fetch(`${API_BASE}/api/profile?user_id=${userId}`);
+  const res = await apiFetch(`${API_BASE}/api/profile?user_id=${userId}`);
   const data = await parseJson(res);
   return data.data as UserProfile;
 }
@@ -151,7 +142,7 @@ export async function updateProfile(
   userId: number,
   payload: { display_name?: string; age?: number | null; gender?: string; signature?: string }
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/profile/update`, {
+  const res = await apiFetch(`${API_BASE}/api/profile/update`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -165,7 +156,7 @@ export async function updateProfile(
 }
 
 export async function getConnectPosts(limit = 50): Promise<ConnectPost[]> {
-  const res = await fetch(`${API_BASE}/api/connect/posts?limit=${limit}`);
+  const res = await apiFetch(`${API_BASE}/api/connect/posts?limit=${limit}`);
   const data = await parseJson(res);
   return data.data.posts as ConnectPost[];
 }
@@ -178,7 +169,7 @@ export async function createConnectPost(payload: {
   media_data?: string;
   media_url?: string;
 }): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/connect/post/create`, {
+  const res = await apiFetch(`${API_BASE}/api/connect/post/create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -189,18 +180,12 @@ export async function createConnectPost(payload: {
 }
 
 export async function logUsage(payload: UsagePayload): Promise<number> {
-  const res = await fetch(`${API_BASE}/api/usage`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-  const data = await parseJson(res);
-  return Number(data?.data?.id || 0);
+  if (!await recordActivity(payload.action_type, payload.action_detail ?? {}, payload.user_id)) throw new Error('Could not save activity');
+  return 0;
 }
 
 export async function getLatestSqueeze(): Promise<LatestSqueezeData | null> {
+  if (!M5_API_BASE) return null;
   const res = await fetch(`${M5_API_BASE}/api/latest-squeeze`);
   const data = await parseJson(res);
   return (data?.data ?? null) as LatestSqueezeData | null;

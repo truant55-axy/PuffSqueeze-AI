@@ -144,16 +144,5 @@ function ensureUserExists(PDO $pdo, int $userId): void
         return;
     }
 
-    $insertStmt = $pdo->prepare(
-        "INSERT INTO {$userTable}
-         (id, email, display_name, plain_password, created_at, updated_at)
-         VALUES
-         (:id, :email, :display_name, :plain_password, NOW(), NOW())"
-    );
-    $insertStmt->execute([
-        'id' => $userId,
-        'email' => "auto_user_{$userId}@local",
-        'display_name' => "Auto User {$userId}",
-        'plain_password' => '123456',
-    ]);
+    jsonResponse(['success' => false, 'message' => 'Account not found'], 404);
 }

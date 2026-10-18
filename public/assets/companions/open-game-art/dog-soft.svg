@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 260" fill="none">
+  <defs>
+    <linearGradient id="fur" x1="45" y1="40" x2="190" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5D8B8"/>
+      <stop offset=".55" stop-color="#E9BC91"/>
+      <stop offset="1" stop-color="#D79B73"/>
+    </linearGradient>
+    <linearGradient id="ear" x1="42" y1="62" x2="87" y2="176" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C88768"/>
+      <stop offset="1" stop-color="#E5AE86"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="99" y1="142" x2="149" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF2DD"/>
+      <stop offset="1" stop-color="#EFD7B8"/>
+    </linearGradient>
+    <radialGradient id="muzzle" cx="0" cy="0" r="1" gradientTransform="matrix(0 30 -43 0 120 161)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF5E8"/>
+      <stop offset="1" stop-color="#EED5B8"/>
+    </radialGradient>
+    <filter id="softShadow" x="27" y="20" width="187" height="234" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+  <ellipse cx="120" cy="231" rx="69" ry="10" fill="#8295A7" opacity=".14" filter="url(#softShadow)"/>
+  <!-- softly shaded floppy ears -->
+  <path d="M72 62C52 44 36 55 38 83c2 32-4 68 9 87 8 12 23 9 30-5 7-15-4-31-10-47-6-17 1-34 10-47L72 62Z" fill="url(#ear)"/>
+  <path d="M168 62c20-18 36-7 34 21-2 32 4 68-9 87-8 12-23 9-30-5-7-15 4-31 10-47 6-17-1-34-10-47l5-9Z" fill="url(#ear)"/>
+  <path d="M49 81c2-11 8-16 14-14 6 2 8 11 7 22-1 22-5 42-11 47-7 5-13-30-10-55Z" fill="#E7B49A" opacity=".72"/>
+  <path d="M191 81c-2-11-8-16-14-14-6 2-8 11-7 22 1 22 5 42 11 47 7 5 13-30 10-55Z" fill="#E7B49A" opacity=".72"/>
+  <!-- body and little paws -->
+  <path d="M76 167c0-27 18-45 44-45s44 18 44 45v40c0 17-13 28-29 28H105c-16 0-29-11-29-28v-40Z" fill="url(#fur)"/>
+  <path d="M91 188c2-19 13-30 29-30s27 11 29 30v29c0 8-6 13-14 13h-30c-8 0-14-5-14-13v-29Z" fill="url(#cream)" opacity=".94"/>
+  <path d="M78 203c-2 15 7 23 20 23h8v-17c0-12-6-19-15-19-7 0-12 5-13 13Zm84 0c2 15-7 23-20 23h-8v-17c0-12 6-19 15-19 7 0 12 5 13 13Z" fill="url(#fur)"/>
+  <!-- softly tapered puppy head, narrower than the previous round shape -->
+  <path d="M120 29c-31 0-50 19-55 48-4 25-2 52 6 72 8 23 26 37 49 40 23-3 41-17 49-40 8-20 10-47 6-72-5-29-24-48-55-48Z" fill="url(#fur)"/>
+  <path d="M75 84c7-25 23-42 45-42s38 17 45 42c-13-8-27-12-45-12s-32 4-45 12Z" fill="#FFF0D9" opacity=".22"/>
+  <!-- eyes -->
+  <ellipse cx="94" cy="112" rx="7" ry="9" fill="#56413C"/>
+  <ellipse cx="146" cy="112" rx="7" ry="9" fill="#56413C"/>
+  <circle cx="96" cy="109" r="2.2" fill="white" opacity=".92"/>
+  <circle cx="148" cy="109" r="2.2" fill="white" opacity=".92"/>
+  <!-- muzzle and gentle smile -->
+  <path d="M83 130c8-13 21-18 37-18s29 5 37 18c8 13 5 28-5 36-8 7-18 10-32 10s-24-3-32-10c-10-8-13-23-5-36Z" fill="url(#muzzle)"/>
+  <path d="M107 128c2-6 7-9 13-9s11 3 13 9c-2 5-7 8-13 8s-11-3-13-8Z" fill="#654A43"/>
+  <ellipse cx="115" cy="126" rx="2.5" ry="1.3" fill="#FFF4E8" opacity=".8"/>
+  <path d="M120 136v10m0 0c-5 7-12 8-17 3m17-3c5 7 12 8 17 3" stroke="#8B6256" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M111 154c3 1 6 1 9 1s6 0 9-1c2 5 0 13-9 13s-11-8-9-13Z" fill="#D98283"/>
+  <ellipse cx="80" cy="141" rx="8" ry="4.5" fill="#D88F83" opacity=".3"/>
+  <ellipse cx="160" cy="141" rx="8" ry="4.5" fill="#D88F83" opacity=".3"/>
+  <!-- small blue collar and tag make the puppy silhouette unmistakable -->
+  <path d="M91 178c17 9 41 9 58 0l7 13c-20 13-52 13-72 0l7-13Z" fill="#9EC7DD"/>
+  <path d="M116 194h8l4 9-8 8-8-8 4-9Z" fill="#E9C47A"/>
+  <!-- soft highlight and small tail -->
+  <path d="M167 198c15-1 22 8 19 17-2 6-8 8-14 5" stroke="#D79B73" stroke-width="9" stroke-linecap="round"/>
+  <path d="M83 71c9-16 22-23 38-23" stroke="#FFF4E4" stroke-width="5" stroke-linecap="round" opacity=".38"/>
+</svg>

@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../services/auth_service.php';
 require_once __DIR__ . '/../services/metrics_service.php';
 
 applyCors();
 requireMethod('POST');
 
 $body = getJsonBody();
-$userId = (int)($body['user_id'] ?? 0);
+$userId = authenticatedUserId();
 $contentText = trim((string)($body['content_text'] ?? ''));
 $mediaType = trim((string)($body['media_type'] ?? 'none'));
 $mediaMime = trim((string)($body['media_mime'] ?? ''));
@@ -34,6 +34,21 @@ if ($contentText !== '' && strlen($contentText) > 20000) {
 
 if (($mediaType === 'image' || $mediaType === 'video') && $mediaData === '' && $mediaUrl === '') {
     jsonResponse(['success' => false, 'message' => 'media_data or media_url is required for image/video'], 422);
+}
+if ($mediaUrl !== '' && (!filter_var($mediaUrl, FILTER_VALIDATE_URL) || strtolower((string)parse_url($mediaUrl, PHP_URL_SCHEME)) !== 'https')) {
+    jsonResponse(['success' => false, 'message' => 'Media links must use HTTPS'], 422);
+}
+if ($mediaData !== '') {
+    if (strlen($mediaData) > 9 * 1024 * 1024 || !preg_match('#^data:([a-z0-9.+/-]+);base64,(.*)$#s', $mediaData, $match)) {
+        jsonResponse(['success' => false, 'message' => 'Invalid or oversized media'], 422);
+    }
+    $binary = base64_decode($match[2], true);
+    $detected = $binary !== false ? (new finfo(FILEINFO_MIME_TYPE))->buffer($binary) : '';
+    $allowed = $mediaType === 'image' ? ['image/jpeg','image/png','image/webp','image/gif'] : ['video/mp4','video/webm'];
+    if ($binary === false || strlen($binary) > 6 * 1024 * 1024 || !in_array($detected, $allowed, true)) {
+        jsonResponse(['success' => false, 'message' => 'Use JPEG, PNG, WebP, GIF, MP4 or WebM up to 6 MB'], 422);
+    }
+    $mediaMime = $detected;
 }
 
 try {

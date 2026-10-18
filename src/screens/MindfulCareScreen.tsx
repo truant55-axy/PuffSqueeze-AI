@@ -1,569 +1,150 @@
-import { motion } from 'motion/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { logUsage } from '../services/backendService';
-import { getCurrentUserId } from '../services/session';
-import { AppLanguage, tr } from '../i18n';
+import { saveAccountItem } from '../services/accountSync';
+import AppIcon from '../components/AppIcon';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import HealingAnimal from '../components/HealingAnimal';
+import CompanionMoodPicker from '../components/CompanionMoodPicker';
+import CareBreathing from '../components/CareBreathing';
+import { useCompanion } from '../hooks/useCompanion';
+import { useCarePets } from '../hooks/useCarePets';
+import { COMPANION_CHOICES } from '../services/companionService';
+import { CARE_REWARDS, CareError, createCareInvite, growthProgress, growthStage, GROWTH_STAGES, joinCareHome, manageCareHome, type CareAction, type CarePet, type FoodKind } from '../services/careService';
+import { login, logUsage } from '../services/backendService';
+import { getCurrentUserId, setCurrentUserId } from '../services/session';
+import { tr, type AppLanguage } from '../i18n';
+import './mindfulCare.css';
+
+const actions: { key: CareAction; icon: string; en: string; zh: string }[] = [
+  { key: 'feed', icon: 'restaurant', en: 'Feed', zh: '喂食' }, { key: 'pet', icon: 'back_hand', en: 'Gentle Stroke', zh: '轻抚' },
+  { key: 'wash', icon: 'water_drop', en: 'Clean', zh: '清洁' }, { key: 'play', icon: 'sports_esports', en: 'Play', zh: '玩耍' },
+  { key: 'rest', icon: 'bedtime', en: 'Rest', zh: '休息' }, { key: 'breathe', icon: 'air', en: 'Deep Breathing', zh: '深呼吸' },
+];
+const foods: { key: FoodKind; icon: string; en: string; zh: string }[] = [
+  { key: 'seeds', icon: 'grass', en: 'Energy seeds', zh: '能量种子' }, { key: 'berry', icon: 'nutrition', en: 'Berries', zh: '莓果' }, { key: 'biscuit', icon: 'bakery_dining', en: 'Biscuit', zh: '饼干' },
+];
+function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function readPlans(key: string): Record<string, string> { try { const raw = JSON.parse(localStorage.getItem(key) || '{}'); return raw && typeof raw === 'object' && !Array.isArray(raw) ? Object.fromEntries(Object.entries(raw).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) : {}; } catch { return {}; } }
 
 export default function MindfulCareScreen({ onBack, language }: { onBack: () => void; language: AppLanguage }) {
-  const [happiness, setHappiness] = useState(0);
-  const [busyId, setBusyId] = useState<number | null>(null);
-  const [message, setMessage] = useState('');
-  const [completed, setCompleted] = useState<Record<number, boolean>>({});
-  const [routineClicks, setRoutineClicks] = useState(0);
-  const [routineLocked, setRoutineLocked] = useState(false);
-  const [activeRoutine, setActiveRoutine] = useState<'breathing' | 'feeding' | null>(null);
-  const [breathStepIndex, setBreathStepIndex] = useState(0);
-  const [breathRemain, setBreathRemain] = useState(4);
-  const [breathCyclesDone, setBreathCyclesDone] = useState(0);
-  const [feedingProgress, setFeedingProgress] = useState(0);
-  const [cleaningProgress, setCleaningProgress] = useState(0);
-  const [seedsFed, setSeedsFed] = useState(0);
-  const [feedingCelebrating, setFeedingCelebrating] = useState(false);
-  const [petMessage, setPetMessage] = useState(tr(language, 'Tap a care action to interact with your bird.', '点击一个互动按钮陪陪小鸟吧。'));
-  const [plannerOpen, setPlannerOpen] = useState(false);
-  const [planDate, setPlanDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [planText, setPlanText] = useState('');
-  const [dailyPlans, setDailyPlans] = useState<Record<string, string>>({});
-  const [breathingMuted, setBreathingMuted] = useState(false);
-  const [breathingPlaying, setBreathingPlaying] = useState(false);
-  const [audioHint, setAudioHint] = useState('');
-  const breathingAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [companion, chooseCompanion] = useCompanion();
+  const care = useCarePets();
   const userId = getCurrentUserId();
-
-  const routines = useMemo(
-    () => [
-      {
-        id: 1,
-        key: 'mindful_gentle_stroke',
-        title: tr(language, 'Gentle Stroke', '轻抚互动'),
-        icon: 'back_hand',
-        desc: tr(language, 'Soothe the bird with soft touches.', '用轻柔互动安抚小鸟。'),
-        energy: 5,
-        doneText: tr(language, 'Gentle Stroke completed. Your bird calmed down.', '轻抚完成，小鸟平静下来了。'),
-      },
-      {
-        id: 2,
-        key: 'mindful_deep_breathing',
-        title: tr(language, 'Deep Breathing', '深呼吸'),
-        icon: 'air',
-        desc: tr(language, 'Sync your breath with the bird.', '跟随小鸟节奏呼吸。'),
-        energy: 15,
-        doneText: tr(language, 'Deep Breathing completed. Rhythm is now steady.', '深呼吸完成，节奏稳定了。'),
-      },
-      {
-        id: 3,
-        key: 'mindful_feeding_time',
-        title: tr(language, 'Feeding Time', '喂食时间'),
-        icon: 'eco',
-        desc: tr(language, 'Provide organic digital seeds.', '喂小鸟健康能量种子。'),
-        energy: 10,
-        doneText: tr(language, 'Feeding Time completed. Energy reserves restored.', '喂食完成，能量恢复。'),
-      },
-    ],
-    [language]
-  );
-
-  const handleRoutine = async (routine: (typeof routines)[number]) => {
-    if (routineLocked) {
-      setMessage(tr(language, 'Daily routine limit reached. Please exit and re-enter Mindful Care.', '今日互动次数已用完，请退出后重新进入。'));
-      return;
-    }
-    if (busyId !== null || completed[routine.id]) return;
-    if (routineClicks >= 3) {
-      setRoutineLocked(true);
-      setMessage(tr(language, 'Daily routine limit reached. Please exit and re-enter Mindful Care.', '今日互动次数已用完，请退出后重新进入。'));
-      return;
-    }
-    setRoutineClicks((prev) => prev + 1);
-
-    if (routine.id === 2) {
-      setBreathStepIndex(0);
-      setBreathRemain(4);
-      setBreathCyclesDone(0);
-      setActiveRoutine('breathing');
-      if (!breathingAudioRef.current) {
-        const audio = new Audio('/audio/pianowhitesound.mp3?v=3');
-        audio.loop = true;
-        audio.volume = 0.5;
-        audio.onplaying = () => {
-          setBreathingPlaying(true);
-          setAudioHint(tr(language, 'Music playing', '音乐播放中'));
-        };
-        audio.onpause = () => setBreathingPlaying(false);
-        audio.onerror = () => {
-          setBreathingPlaying(false);
-          setAudioHint(tr(language, 'Audio load failed', '音频加载失败'));
-        };
-        breathingAudioRef.current = audio;
-      }
-      breathingAudioRef.current.muted = false;
-      setBreathingMuted(false);
-      const playPromise = breathingAudioRef.current.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {
-          setAudioHint(tr(language, 'Tap Play Music to start audio', '点击“播放音乐”开始'));
-        });
-      }
-      return;
-    }
-    if (routine.id === 3) {
-      setFeedingProgress(0);
-      setCleaningProgress(0);
-      setSeedsFed(0);
-      setFeedingCelebrating(false);
-      setPetMessage('Tap a care action to interact with your bird.');
-      setPlannerOpen(false);
-      setActiveRoutine('feeding');
-      return;
-    }
-
-    await completeRoutine(routine);
-  };
-
-  const completeRoutine = async (routine: (typeof routines)[number], detail: Record<string, unknown> = {}) => {
-    if (busyId !== null || completed[routine.id]) return;
-    setBusyId(routine.id);
-    setMessage('');
-    try {
-      await logUsage({
-        user_id: userId,
-        action_type: routine.key,
-        action_detail: {
-          score_gain: routine.energy,
-          routine_title: routine.title,
-          client_time: new Date().toISOString(),
-          ...detail,
-        },
-      });
-      setHappiness((prev) => Math.min(100, prev + routine.energy));
-      setCompleted((prev) => ({ ...prev, [routine.id]: true }));
-      setMessage(routine.doneText);
-    } catch (e: any) {
-      setMessage(e?.message || tr(language, 'Action failed, please try again.', '操作失败，请重试。'));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  useEffect(() => {
-    if (activeRoutine !== 'breathing') return;
-    const steps = [
-      { label: 'Inhale', seconds: 4 },
-      { label: 'Hold', seconds: 2 },
-      { label: 'Exhale', seconds: 6 },
-      { label: 'Hold', seconds: 2 },
-    ];
-
-    const timer = setInterval(() => {
-      setBreathRemain((prev) => {
-        if (prev > 1) return prev - 1;
-        const nextStep = (breathStepIndex + 1) % steps.length;
-        if (nextStep === 0) {
-          setBreathCyclesDone((c) => {
-            const next = c + 1;
-            if (next >= 3) {
-              const routine = routines.find((r) => r.id === 2);
-              if (routine) {
-                void completeRoutine(routine, { completed_cycles: 3 });
-              }
-              setActiveRoutine(null);
-            }
-            return next;
-          });
-        }
-        setBreathStepIndex(nextStep);
-        return steps[nextStep].seconds;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [activeRoutine, breathStepIndex, routines]);
-
-  useEffect(() => {
-    if (activeRoutine !== 'breathing') {
-      const audio = breathingAudioRef.current;
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
-      }
-      return;
-    }
-
-    if (!breathingAudioRef.current) {
-      const audio = new Audio('/audio/pianowhitesound.mp3?v=3');
-      audio.loop = true;
-      audio.volume = 0.5;
-      audio.onplaying = () => {
-        setBreathingPlaying(true);
-          setAudioHint(tr(language, 'Music playing', '音乐播放中'));
-      };
-      audio.onpause = () => setBreathingPlaying(false);
-      audio.onerror = () => {
-        setBreathingPlaying(false);
-          setAudioHint(tr(language, 'Audio load failed', '音频加载失败'));
-      };
-      breathingAudioRef.current = audio;
-    }
-
-    const playPromise = breathingAudioRef.current.play();
-    if (playPromise && typeof playPromise.catch === 'function') {
-      playPromise.catch(() => {
-        // autoplay may be blocked before user interaction
-      });
-    }
-
-    return () => {
-      const audio = breathingAudioRef.current;
-      if (!audio) return;
-      audio.pause();
-      audio.currentTime = 0;
-      audio.muted = false;
-      setBreathingMuted(false);
-      setBreathingPlaying(false);
-      setAudioHint('');
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [food, setFood] = useState<FoodKind>('seeds');
+  const [selectedAction, setSelectedAction] = useState(0);
+  const [reaction, setReaction] = useState<CareAction | null>(null);
+  const [notice, setNotice] = useState('');
+  const [failure, setFailure] = useState('');
+  const [leveledUp, setLeveledUp] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
+  const [breathingPet, setBreathingPet] = useState<CarePet | null>(null);
+  const [invite, setInvite] = useState<{ petId: string; code: string } | null>(null);
+  const [joinCode, setJoinCode] = useState('');
+  const [socialBusy, setSocialBusy] = useState(false);
+  const [petName, setPetName] = useState('');
+  const [showLogin, setShowLogin] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [planDate, setPlanDate] = useState(today);
+  const plannerKey = `puffsqueeze_daily_plans_${userId}`;
+  const [plans, setPlans] = useState(() => readPlans(plannerKey));
+  const [planText, setPlanText] = useState(() => readPlans(plannerKey)[today()] || '');
+  const [showLegacy, setShowLegacy] = useState(false);
+  const legacyPlans = readPlans('puffsqueeze_daily_plans');
+  const timeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const actionLock = useRef(false);
+  const remoteMemory = useRef<{ petId: string; eventId?: string; xp: number } | null>(null);
+  const reduceMotion = useReducedMotion();
+  const pet = care.pets.find(p => p.id === roomId) || care.pets.find(p => p.owner_id === userId && p.kind === companion) || care.pets[0];
+  const progress = growthProgress(pet.xp);
+  const choice = COMPANION_CHOICES.find(c => c.kind === pet.kind)!;
+  const name = pet.name || (language === 'zh' ? choice.zh : choice.en);
+  const online = !pet.id.startsWith('local-');
+  const owner = pet.owner_id === userId;
+  const disabled = care.busy || cooldown || care.mode === 'loading' || socialBusy;
+  useEffect(() => () => { timeouts.current.forEach(clearTimeout); }, []);
+  useEffect(() => { setPetName(pet.name); setNotice(''); setFailure(''); setInvite(null); }, [pet.id]);
+  const messageForError = (e: unknown) => {
+    const code = e instanceof CareError ? e.code : 'CARE_SERVER';
+    const errors: Record<string, [string, string]> = {
+      CARE_LOGIN: ['Sign in again to open your online home and invite friends.', '重新登录后可进入在线空间、邀请好友。'],
+      CARE_PAUSE: ['A little pause — try again in a few seconds.', '让伙伴缓一缓，几秒后再互动吧。'],
+      CARE_CODE: ['This invitation is invalid or expired. Ask your friend for a new code.', '邀请码无效或已过期，请好友生成新邀请码。'],
+      CARE_FULL: ['This home already has six caregivers.', '这个空间已有六位照顾者。'],
+      CARE_MEMBER: ['Your membership changed. Refresh your homes.', '空间成员状态已改变，请刷新空间。'],
+      CARE_OWNER: ['Only the home owner can manage this setting.', '这项设置由空间主人管理。'],
+      CARE_CREDENTIALS: ['Could not sign in. Check your email, password and backend connection.', '登录失败，请检查邮箱、密码及后端连接。'],
+      CARE_SERVER: ['Could not confirm the sync. Reconnect to see the saved progress.', '暂时无法确认同步结果，请重新连接查看保存的进度。'],
     };
-  }, [activeRoutine]);
-
-  const currentBreathStep = useMemo(() => {
-    const steps = [
-      { label: 'Inhale', seconds: 4, scale: 1.2 },
-      { label: 'Hold', seconds: 2, scale: 1.2 },
-      { label: 'Exhale', seconds: 6, scale: 0.9 },
-      { label: 'Hold', seconds: 2, scale: 0.9 },
-    ];
-    return steps[breathStepIndex];
-  }, [breathStepIndex]);
-
-  const feedBird = () => {
-    if (feedingCelebrating) return;
-    setSeedsFed((s) => s + 1);
-    setPetMessage(tr(language, 'Yummy. I like this snack.', '真好吃，我喜欢这个零食。'));
-    setFeedingProgress((prev) => {
-      const next = Math.min(100, prev + 8);
-      if (next >= 100) {
-        setFeedingCelebrating(true);
-      }
-      return next;
-    });
+    return tr(language, ...(errors[code] || errors.CARE_SERVER));
   };
-
-  const cleanBird = () => {
-    if (feedingCelebrating) return;
-    setPetMessage(tr(language, 'I like taking shower.', '我喜欢洗澡，清清爽爽。'));
-    setCleaningProgress((prev) => Math.min(100, prev + 10));
-  };
-
+  const schedule = (fn: () => void, ms: number) => { timeouts.current.push(setTimeout(fn, ms)); };
   useEffect(() => {
-    const autoStart = localStorage.getItem('puffsqueeze_mindfulcare_autostart');
-    if (autoStart === 'feeding') {
-      localStorage.removeItem('puffsqueeze_mindfulcare_autostart');
-      setFeedingProgress(0);
-      setCleaningProgress(0);
-      setSeedsFed(0);
-      setFeedingCelebrating(false);
-      setPetMessage(tr(language, 'Tap a care action to interact with your bird.', '点击一个互动按钮陪陪小鸟吧。'));
-      setPlannerOpen(false);
-      setActiveRoutine('feeding');
-    }
-    if (autoStart === 'breathing') {
-      localStorage.removeItem('puffsqueeze_mindfulcare_autostart');
-      setBreathStepIndex(0);
-      setBreathRemain(4);
-      setBreathCyclesDone(0);
-      setActiveRoutine('breathing');
-    }
-  }, [language]);
-
-  useEffect(() => {
+    const event = pet.events[0];
+    const previous = remoteMemory.current;
+    remoteMemory.current = { petId: pet.id, eventId: event?.id, xp: pet.xp };
+    if (!previous || previous.petId !== pet.id || !event || previous.eventId === event.id || event.user_id === userId) return;
+    setReaction(event.action);
+    setNotice(tr(language, `${event.name} cared for ${name}. Growing together!`, `${event.name} 刚刚照顾了${name}，一起慢慢长大！`));
+    schedule(() => setReaction(null), 1800);
+    if (growthStage(pet.xp) > growthStage(previous.xp)) { setLeveledUp(true); schedule(() => setLeveledUp(false), 4500); }
+  }, [pet.id, pet.events[0]?.id, pet.xp]);
+  const commitAction = async (action: CareAction, target: CarePet) => {
+    if (actionLock.current) return;
+    actionLock.current = true; setFailure('');
     try {
-      const raw = localStorage.getItem('puffsqueeze_daily_plans');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
-          setDailyPlans(parsed as Record<string, string>);
-        }
-      }
-    } catch {
-      // ignore parse failures
-    }
-  }, []);
-
-  const savePlan = () => {
-    const text = planText.trim();
-    if (!planDate || text === '') return;
-    setDailyPlans((prev) => {
-      const next = { ...prev, [planDate]: text };
-      localStorage.setItem('puffsqueeze_daily_plans', JSON.stringify(next));
-      return next;
-    });
-    setPlanText('');
-    setPetMessage(tr(language, 'Plan saved. Keep going one step at a time.', '计划已保存，继续一步一步来。'));
+      const next = await care.action(target, action, food);
+      setReaction(action); setCooldown(true);
+      const responses: Record<CareAction, [string, string]> = { feed: ['Energy replenished. Thanks for the care.', '能量已补充，谢谢你的照顾。'], pet: ['Your gentle touch makes this home feel warm.', '轻轻摸摸，空间也变得暖暖的。'], wash: ['Clean and refreshed.', '清洁完成，状态焕新。'], play: ['A good moment to unwind together.', '一起活动一下，放松片刻。'], rest: ['Resting and restoring energy.', '休息片刻，恢复精力。'], breathe: ['We found a calmer rhythm together.', '我们一起找到了更平静的节奏。'] };
+      setNotice(`${tr(language, ...responses[action])} +${CARE_REWARDS[action]} XP`);
+      if (growthStage(next.xp) > growthStage(target.xp)) { setLeveledUp(true); schedule(() => setLeveledUp(false), 4500); }
+      schedule(() => setReaction(null), 1800); schedule(() => setCooldown(false), 5200);
+      if (target.id.startsWith('local-')) void logUsage({ user_id: userId, action_type: `mindful_${action === 'feed' ? 'feeding_time' : action === 'pet' ? 'gentle_stroke' : action === 'breathe' ? 'deep_breathing' : action}`, action_detail: { score_gain: CARE_REWARDS[action], kind: target.kind, local_care: true, ...(action === 'breathe' ? { completed_cycles: 3 } : {}) } }).catch(() => undefined);
+    } catch (e) { setFailure(messageForError(e)); } finally { actionLock.current = false; }
   };
-
+  const act = async (action: CareAction, target = pet) => { if (actionLock.current || care.busy || cooldown) return; if (action === 'breathe') { setBreathingPet(target); return; } await commitAction(action, target); };
   useEffect(() => {
-    if (!feedingCelebrating) return;
-    const routine = routines.find((r) => r.id === 3);
-    if (routine) {
-      void completeRoutine(routine, { seeds_fed: seedsFed });
-    }
-    const timer = setTimeout(() => {
-      setActiveRoutine(null);
-      setFeedingCelebrating(false);
-    }, 1400);
-    return () => clearTimeout(timer);
-  }, [feedingCelebrating, routines, seedsFed]);
+    const auto = localStorage.getItem('puffsqueeze_mindfulcare_autostart');
+    if (care.mode === 'loading') return;
+    if (auto === 'breathing') { localStorage.removeItem('puffsqueeze_mindfulcare_autostart'); setBreathingPet(pet); }
+    else if (auto === 'feeding') { localStorage.removeItem('puffsqueeze_mindfulcare_autostart'); setSelectedAction(0); }
+  }, [care.mode, pet.id]);
+  const social = async (run: () => Promise<void>) => { if (socialBusy || care.busy) return; setSocialBusy(true); setFailure(''); try { await run(); } catch (e) { setFailure(messageForError(e)); } finally { setSocialBusy(false); } };
+  const savePlan = () => { const text = planText.trim(); if (!text || !planDate) return; const next = { ...plans, [planDate]: text }; saveAccountItem(plannerKey, JSON.stringify(next), userId); setPlans(next); setNotice(tr(language, 'Plan saved. One small step at a time.', '计划已保存，一小步一小步慢慢来。')); };
+  const syncLogin = async () => { await social(async () => { let user; try { user = await login(email.trim(), password); } catch { throw new CareError('Sign in failed', 'CARE_CREDENTIALS'); } if (user.id !== userId) { setFailure(tr(language, 'Use the account you are currently signed into. Switch accounts from Home.', '请使用当前登录的账号；更换账号请从 Home 退出后登录。')); return; } setCurrentUserId(user.id, user.care_token); setPassword(''); setShowLogin(false); await care.refresh(); }); };
 
-  return (
-    <div className="min-h-screen pb-24 relative z-10">
-      <header className="fixed top-0 w-full z-50 bg-white/10 backdrop-blur-2xl border-b border-white/10">
-        <div className="flex items-center gap-4 px-8 py-4 w-full max-w-7xl mx-auto">
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all">
-            <span className="material-symbols-outlined text-primary">arrow_back</span>
-          </button>
-          <h1 className="text-2xl font-bold text-primary font-headline tracking-tight">{tr(language, 'Mindful Care', '正念陪伴')}</h1>
-        </div>
-      </header>
-
-      <main className="pt-28 px-6 max-w-2xl mx-auto space-y-10">
-        {/* Happiness Status */}
-        <motion.section 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card rounded-[2.5rem] p-10 text-center relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-0 w-full h-2 bg-primary/10">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${happiness}%` }}
-              className="h-full bg-primary"
-            />
-          </div>
-          <h2 className="text-3xl font-serif italic text-on-surface mb-2">{tr(language, 'Bird Happiness', '小鸟幸福值')}</h2>
-          <div className="text-6xl font-headline font-black text-primary mb-4">{happiness}%</div>
-          <p className="text-on-surface-variant font-medium">{tr(language, 'Your companion is feeling peaceful today.', '你的伙伴今天很平静。')}</p>
-          {message && <p className="text-sm text-primary font-semibold mt-3">{message}</p>}
-        </motion.section>
-
-        {/* Interaction Routines */}
-        <div className="space-y-6">
-          <h3 className="text-xl font-serif italic text-on-surface px-4">{tr(language, 'Daily Routines', '每日互动')}</h3>
-          {routines.map((item, i) => (
-            <motion.button 
-              key={item.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ x: 10, backgroundColor: "rgba(255, 255, 255, 0.6)" }}
-              onClick={() => void handleRoutine(item)}
-              disabled={busyId !== null || Boolean(completed[item.id]) || routineLocked}
-              className="w-full bg-white/30 backdrop-blur-md p-8 rounded-[2rem] border border-white/20 shadow-sm flex items-center gap-8 text-left transition-all"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
-                <span className="material-symbols-outlined text-3xl">{item.icon}</span>
-              </div>
-              <div className="flex-grow">
-                <h4 className="font-headline font-bold text-lg text-on-surface mb-1">{item.title}</h4>
-                <p className="text-sm text-on-surface-variant font-medium leading-relaxed">
-                  {routineLocked
-                    ? tr(language, 'Locked. Exit and re-enter Mindful Care to reset.', '已锁定，退出并重新进入可重置。')
-                    : completed[item.id]
-                      ? tr(language, 'Completed today.', '今日已完成')
-                      : item.desc}
-                </p>
-              </div>
-              <div className="text-primary font-black text-sm">
-                {completed[item.id] ? tr(language, 'Done', '完成') : `+${item.energy}`}
-              </div>
-            </motion.button>
-          ))}
-        </div>
-      </main>
-
-      {activeRoutine === 'breathing' && (
-        <div className="fixed inset-0 z-[90] bg-[#eaf4fa] flex flex-col items-center justify-center px-6">
-          <h3 className="text-3xl font-black text-primary mb-2">{tr(language, 'Deep Breathing', '深呼吸')}</h3>
-          <p className="text-on-surface-variant mb-8">{tr(language, 'Follow the guide. Complete 3 cycles.', '跟随引导完成 3 轮呼吸。')}</p>
-          <motion.div
-            animate={{ scale: currentBreathStep.scale }}
-            transition={{ duration: 1, ease: 'easeInOut' }}
-            className="w-52 h-52 rounded-full bg-primary/20 border-4 border-primary/40 flex items-center justify-center mb-8"
-          >
-            <div className="text-center">
-              <p className="text-2xl font-black text-primary">{currentBreathStep.label}</p>
-              <p className="text-xl font-bold text-on-surface mt-2">{breathRemain}s</p>
-            </div>
-          </motion.div>
-          <p className="text-sm font-semibold text-on-surface-variant mb-8">{tr(language, 'Cycle', '第')} {Math.min(3, breathCyclesDone + 1)} / 3</p>
-          {audioHint && <p className="text-xs text-primary mb-3">{audioHint}</p>}
-          <button
-            type="button"
-            onClick={() => {
-              const audio = breathingAudioRef.current;
-              if (!audio) return;
-              if (breathingPlaying) {
-                audio.pause();
-                setAudioHint(tr(language, 'Music paused', '音乐已暂停'));
-                return;
-              }
-              void audio.play().catch(() => {
-                setAudioHint(tr(language, 'Play blocked, tap again', '播放被拦截，请再点一次'));
-              });
-            }}
-            className="mb-3 px-6 py-3 rounded-full bg-primary text-white font-bold"
-          >
-            {breathingPlaying ? tr(language, 'Pause Music', '暂停音乐') : tr(language, 'Play Music', '播放音乐')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const audio = breathingAudioRef.current;
-              if (!audio) return;
-              const nextMuted = !breathingMuted;
-              audio.muted = nextMuted;
-              setBreathingMuted(nextMuted);
-              if (!nextMuted) {
-                void audio.play().catch(() => undefined);
-              }
-            }}
-            className="mb-4 px-6 py-3 rounded-full bg-white border border-primary/20 text-primary font-bold"
-          >
-            {breathingMuted ? tr(language, 'Unmute Music', '取消静音') : tr(language, 'Mute Music', '静音')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveRoutine(null)}
-            className="px-6 py-3 rounded-full border border-primary/30 text-primary font-bold"
-          >
-            {tr(language, 'Exit', '退出')}
-          </button>
-        </div>
-      )}
-
-      {activeRoutine === 'feeding' && (
-        <div className="fixed inset-0 z-[90] bg-[#f6fbf3] flex flex-col items-center justify-center px-6">
-          <h3 className="text-3xl font-black text-primary mb-2">{tr(language, 'Feeding Time', '喂食时间')}</h3>
-          <p className="text-on-surface-variant mb-4 text-center">
-            {feedingCelebrating ? tr(language, 'Yummy. Your bird is happy.', '小鸟吃得很开心。') : petMessage}
-          </p>
-          <div className="w-full max-w-sm h-3 rounded-full bg-primary/15 overflow-hidden mb-2">
-            <motion.div className="h-full bg-primary" animate={{ width: `${feedingProgress}%` }} />
-          </div>
-          <p className="text-xs text-on-surface-variant mb-2">Feeding {feedingProgress}%</p>
-          <div className="w-full max-w-sm h-3 rounded-full bg-sky-100 overflow-hidden mb-2">
-            <motion.div className="h-full bg-sky-500" animate={{ width: `${cleaningProgress}%` }} />
-          </div>
-          <p className="text-xs text-on-surface-variant mb-6">Cleaning {cleaningProgress}%</p>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setPetMessage('I am waiting for your care actions.')}
-            disabled={false}
-            className="w-56 h-56 rounded-full bg-white shadow-xl border border-primary/20 flex flex-col items-center justify-center"
-          >
-            <motion.div
-              animate={
-                feedingCelebrating
-                  ? { y: [0, -10, 0, -8, 0], rotate: [0, 6, 0, -6, 0], scale: [1, 1.06, 1] }
-                  : { y: [0, -2, 0] }
-              }
-              transition={{ duration: feedingCelebrating ? 0.9 : 1.6, repeat: feedingCelebrating ? 1 : Infinity }}
-              className="w-36 h-40"
-            >
-              <svg viewBox="0 0 200 250" className="w-full h-full">
-                <rect x="58" y="195" width="40" height="26" rx="13" fill="#fbbf24" />
-                <rect x="102" y="195" width="40" height="26" rx="13" fill="#fbbf24" />
-                <path d="M30 145 C 10 150, -5 170, 5 190 C 15 200, 35 180, 45 165 Z" fill="#1d4ed8" />
-                <path d="M170 145 C 190 150, 205 170, 195 190 C 185 200, 165 180, 155 165 Z" fill="#1d4ed8" />
-                <circle cx="10" cy="188" r="14" fill="#ffffff" />
-                <circle cx="190" cy="188" r="14" fill="#ffffff" />
-                <path d="M30 110 C 30 20, 170 20, 170 110 L170 155 C 170 200, 140 215, 100 215 C 60 215, 30 200, 30 155 Z" fill="#ffffff" />
-                <path d="M30 155 C 30 200, 60 215, 100 215 C 140 215, 170 200, 170 155 L170 135 C 140 120, 60 120, 30 135 Z" fill="#1d4ed8" />
-                <text x="100" y="180" textAnchor="middle" fill="#ffffff" fontSize="28" fontWeight="900" fontFamily="system-ui, sans-serif" letterSpacing="2">XJTLU</text>
-                <ellipse cx="74" cy="98" rx="6" ry="14" fill="#1e293b" />
-                <ellipse cx="126" cy="98" rx="6" ry="14" fill="#1e293b" />
-                <ellipse cx="46" cy="104" rx="12" ry="8" fill="#f9a8d4" />
-                <ellipse cx="154" cy="104" rx="12" ry="8" fill="#f9a8d4" />
-                <ellipse cx="100" cy="110" rx="18" ry="22" fill="#eab308" />
-              </svg>
-            </motion.div>
-            <span className="text-sm font-bold text-primary mt-2">
-              {feedingCelebrating ? tr(language, 'Happy Bird', '开心小鸟') : tr(language, 'Your Bird', '你的小鸟')}
-            </span>
-          </motion.button>
-          <p className="text-sm text-on-surface-variant mt-4">{tr(language, 'Seeds fed', '已喂食次数')}: {seedsFed}</p>
-
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={feedBird}
-              className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-bold"
-            >
-              {tr(language, 'Feeding', '喂食')}
-            </button>
-            <button
-              type="button"
-              onClick={cleanBird}
-              className="px-4 py-2.5 rounded-xl bg-sky-500 text-white text-sm font-bold"
-            >
-              {tr(language, 'Cleaning', '清洁')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPlannerOpen((v) => !v)}
-              className="px-4 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-bold"
-            >
-              {tr(language, 'Plan Note', '计划便签')}
-            </button>
-          </div>
-
-          {plannerOpen && (
-            <div className="mt-4 w-full max-w-md bg-white/90 border border-primary/15 rounded-2xl p-4 space-y-3">
-              <p className="text-sm font-black text-primary">{tr(language, 'Daily Planner', '每日计划')}</p>
-              <input
-                type="date"
-                value={planDate}
-                onChange={(e) => {
-                  const d = e.target.value;
-                  setPlanDate(d);
-                  setPlanText(dailyPlans[d] || '');
-                }}
-                className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm"
-              />
-              <textarea
-                value={planText}
-                onChange={(e) => setPlanText(e.target.value)}
-                placeholder={tr(language, 'Write what you plan to do or what you finished today.', '写下今天计划做的事或已完成内容。')}
-                className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm min-h-[88px]"
-              />
-              <button
-                type="button"
-                onClick={savePlan}
-                className="w-full rounded-lg bg-primary text-white py-2 text-sm font-bold"
-              >
-                {tr(language, 'Save Plan', '保存计划')}
-              </button>
-              <div className="text-xs text-on-surface-variant max-h-28 overflow-auto">
-                {Object.keys(dailyPlans).length === 0 && <p>{tr(language, 'No saved plans yet.', '还没有保存的计划。')}</p>}
-                {Object.entries(dailyPlans)
-                  .sort(([a], [b]) => (a < b ? 1 : -1))
-                  .slice(0, 7)
-                  .map(([date, content]) => (
-                    <p key={date} className="mb-1">
-                      {date}: {content}
-                    </p>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setActiveRoutine(null)}
-            className="mt-8 px-6 py-3 rounded-full border border-primary/30 text-primary font-bold"
-          >
-            {tr(language, 'Exit', '退出')}
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="care-page min-h-screen pb-32 relative z-10">
+    <header className="fixed top-0 w-full z-50 bg-[#f2f7fc]/85 backdrop-blur-xl border-b border-white/70"><div className="flex items-center gap-3 px-5 py-4 max-w-6xl mx-auto"><button onClick={onBack} aria-label={tr(language, 'Back to Home', '返回首页')} className="w-10 h-10 rounded-full bg-white/80 text-primary flex items-center justify-center"><AppIcon className="app-icon">arrow_back</AppIcon></button><h1 className="font-headline text-lg sm:text-xl font-bold text-primary">{tr(language, 'Mindful Care', '正念陪伴')}</h1></div></header>
+    <main inert={Boolean(breathingPet)} className="max-w-6xl mx-auto px-4 sm:px-7 pt-28 space-y-6">
+      <div className="flex flex-wrap justify-between gap-4 items-end"><div><p className="text-primary text-[10px] sm:text-xs tracking-[.22em] uppercase mb-2">{tr(language, 'COMPANION SPACE', '伙伴空间')}</p><h2 className="care-page-title">{tr(language, 'A moment of calm, at your pace.', '给自己一段放松的时间。')}</h2><p className="text-sm text-on-surface-variant mt-2">{tr(language, 'Care for your companion, track your progress and take a break.', '照顾伙伴，记录成长，也给自己留一点休息的空间。')}</p></div><span className="care-pill"><span className={`w-1.5 h-1.5 rounded-full ${care.mode === 'online' && !care.error ? 'bg-[#8faea2]' : 'bg-primary/50'}`} />{care.mode === 'loading' ? tr(language, 'Connecting…', '连接中…') : online ? care.error ? tr(language, 'Reconnecting', '等待重连') : tr(language, 'Online home', '在线空间') : tr(language, 'On this device', '此设备空间')}</span></div>
+      {(care.error || care.mode === 'local') && <div className="care-sync-note"><div><p className="font-semibold text-sm">{care.error === 'CARE_LOGIN' ? tr(language, 'Open your shared home', '开启好友共养空间') : tr(language, 'Companion connection', '伙伴连接状态')}</p><p className="text-xs mt-1 leading-relaxed">{online ? tr(language, 'Waiting for the server. Shared care resumes when connected.', '正在等待服务器连接，连接恢复后可继续共同照顾。') : tr(language, 'Device progress is saved separately. Sign in again for online growth and friend invitations.', '此设备进度单独保存。重新登录后进入在线成长存档，并可邀请好友。')}</p></div><button className="care-button shrink-0" onClick={() => care.error === 'CARE_LOGIN' ? setShowLogin(v => !v) : void care.refresh()}>{care.error === 'CARE_LOGIN' ? tr(language, 'Sign in to sync', '登录同步') : tr(language, 'Reconnect', '重新连接')}</button></div>}
+      {showLogin && <form className="care-panel p-5 flex flex-wrap gap-3" onSubmit={e => { e.preventDefault(); void syncLogin(); }}><label className="grow text-xs">{tr(language, 'Current account email', '当前账号邮箱')}<input type="email" required autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} className="care-input mt-1" /></label><label className="grow text-xs">{tr(language, 'Password', '密码')}<input type="password" required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className="care-input mt-1" /></label><button disabled={socialBusy} className="care-button self-end">{tr(language, 'Connect online home', '连接在线空间')}</button></form>}
+      <section aria-label={tr(language, 'Choose your companion', '选择伙伴')} className="care-companion-strip">{COMPANION_CHOICES.map(c => { const p = care.pets.find(p => p.owner_id === userId && p.kind === c.kind); const active = owner && c.kind === pet.kind; return <button key={c.kind} disabled={care.busy || socialBusy || Boolean(breathingPet)} aria-pressed={active} onClick={() => { chooseCompanion(c.kind); setRoomId(null); }} className={`care-choice ${active ? 'is-active' : ''}`}><div className="h-14 w-14 mx-auto"><HealingAnimal kind={c.kind} growthStage={growthStage(p?.xp || 0)} /></div><span className="block text-[11px] mt-1 font-semibold whitespace-nowrap">{language === 'zh' ? c.zh : c.en}</span><span className="block text-[9px] text-on-surface-variant mt-1">Lv. {1 + Math.floor((p?.xp || 0) / 40)}</span></button>; })}</section>
+      <div className="care-workspace grid lg:grid-cols-[1.5fr_1fr] gap-5 items-start">
+        <section className="care-device"><div className="flex items-center justify-between gap-2 px-5 pt-5 pb-3"><div className="flex items-center gap-2"><AppIcon className="app-icon text-primary text-lg">cottage</AppIcon><span className="text-xs font-semibold">{owner ? tr(language, 'My companion space', '我的伙伴空间') : tr(language, 'Shared companion space', '好友的伙伴空间')}</span></div><span className="text-[10px] font-bold text-primary uppercase tracking-wider">{language === 'zh' ? progress.stage.zh : progress.stage.en}</span></div>
+          <div className={`care-scene ${reaction === 'rest' ? 'is-resting' : ''}`}><div className="care-window" aria-hidden="true"><div className="care-cloud" /><span className="care-window-star">✧</span><i /><b /></div><div className="care-plant" aria-hidden="true"><span /><i /><b /></div><div className="care-rug" aria-hidden="true" /><span className="care-scene-star" aria-hidden="true">✦</span><motion.button className="care-scene-pet" aria-label={tr(language, `Gently stroke ${name}`, `轻抚${name}`)} disabled={disabled} onClick={() => void act('pet')} animate={reduceMotion ? {} : reaction === 'play' ? { rotate: [0, -2, 2, -1, 0], y: [0, -7, 0, -3, 0] } : { rotate: 0, y: 0 }} transition={{ duration: 1.1 }}><HealingAnimal kind={pet.kind} growthStage={progress.index} mood={owner ? undefined : 'calm'} isJiggling={reaction === 'feed' || reaction === 'pet' || reaction === 'wash'} /></motion.button><AnimatePresence>{reaction && <motion.div key={`${pet.id}-${reaction}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: .8, y: -5 }} exit={{ opacity: 0 }} className="care-reaction" aria-hidden="true"><AppIcon className="app-icon">{reaction === 'wash' ? 'water_drop' : reaction === 'rest' ? 'bedtime' : reaction === 'feed' ? foods.find(f => f.key === food)?.icon : 'favorite'}</AppIcon></motion.div>}</AnimatePresence><div className="care-scene-caption"><span className="font-bold">{name}</span><span className="text-on-surface-variant text-[10px]">{tr(language, 'Tap to interact', '点击伙伴进行互动')}</span></div>{leveledUp && <div className="care-level-toast" role="status"><AppIcon className="app-icon">auto_awesome</AppIcon>{tr(language, 'New stage unlocked', '已解锁新的成长阶段')}</div>}</div>
+          {owner && <div className="px-4 sm:px-5 pt-4"><CompanionMoodPicker kind={pet.kind} language={language} /></div>}
+          <div className="px-4 sm:px-5 py-4 space-y-4"><div className="flex items-center justify-between text-xs"><span className="font-bold">{tr(language, 'Nutrition', '补充能量')}</span><span className="text-on-surface-variant">{tr(language, 'Each feed +10 XP', '每次喂食 +10 XP')}</span></div><div className="grid grid-cols-3 gap-2">{foods.map(f => <button className={`care-food ${food === f.key ? 'is-active' : ''}`} key={f.key} aria-pressed={food === f.key} onClick={() => setFood(f.key)}><AppIcon className="app-icon" aria-hidden="true">{f.icon}</AppIcon><span>{language === 'zh' ? f.zh : f.en}</span></button>)}</div><div className="grid grid-cols-3 sm:grid-cols-6 gap-2">{actions.map((a, i) => <button key={a.key} className={`care-tool ${selectedAction === i ? 'is-active' : ''}`} disabled={disabled} onClick={() => { setSelectedAction(i); void act(a.key); }} aria-label={`${language === 'zh' ? a.zh : a.en} +${CARE_REWARDS[a.key]} XP`}><AppIcon className="app-icon">{a.icon}</AppIcon><span>{language === 'zh' ? a.zh : a.en}</span><small>+{CARE_REWARDS[a.key]}</small></button>)}</div>{cooldown && <p className="text-center text-[10px] text-on-surface-variant">{tr(language, 'Taking a short pause…', '稍作停留，感受这次陪伴。')}</p>}</div>
+        </section>
+        <aside className="space-y-4"><section className="care-panel p-6"><div className="flex items-start justify-between"><div><p className="text-xs text-primary font-semibold">{tr(language, 'Growing with your care', '在你的陪伴中成长')}</p><h3 className="text-xl font-bold mt-2">{name}</h3></div><span className="care-pill">Lv. {progress.level}</span></div><div className="flex justify-between text-[11px] mt-5 mb-2"><span>{language === 'zh' ? progress.stage.zh : progress.stage.en}</span><span>{pet.xp} / {progress.stage.nextAt ?? '∞'} XP</span></div><div className="care-meter"><motion.div animate={{ width: `${progress.percent}%` }} /></div><p className="text-[11px] mt-2 text-on-surface-variant">{progress.remaining ? tr(language, `${progress.remaining} XP to the next form`, `再积累 ${progress.remaining} XP 解锁下一个形象`) : tr(language, 'Mature form unlocked. Your shared progress continues.', '已解锁成熟形态，陪伴与成长仍会继续积累。')}</p><div className="space-y-4 mt-6">{([{ key: 'happiness', en: 'Happiness', zh: '幸福值', icon: 'favorite' }, { key: 'fullness', en: 'Fullness', zh: '饱食度', icon: 'restaurant' }, { key: 'cleanliness', en: 'Cleanliness', zh: '清洁度', icon: 'water_drop' }, { key: 'energy', en: 'Energy', zh: '活力', icon: 'bedtime' }] as const).map(s => <div key={s.key}><div className="flex justify-between items-center text-[11px] mb-1.5"><span className="flex items-center gap-2"><AppIcon className="app-icon text-base text-primary">{s.icon}</AppIcon>{language === 'zh' ? s.zh : s.en}</span><span>{Math.round(pet[s.key])}%</span></div><div className={`care-meter ${s.key}`} role="progressbar" aria-label={language === 'zh' ? s.zh : s.en} aria-valuenow={Math.round(pet[s.key])} aria-valuemin={0} aria-valuemax={100}><motion.div animate={{ width: `${pet[s.key]}%` }} /></div></div>)}</div><p className="text-[10px] text-on-surface-variant leading-relaxed mt-5">{tr(language, 'A gentle pace: no lost growth, no punishment for taking a break.', '按自己的节奏来，离开休息不会扣除成长经验。')}</p></section>
+          <section className="care-panel p-5"><div className="flex items-center gap-2 mb-3"><AppIcon className="app-icon text-primary">history</AppIcon><h3 className="font-semibold text-sm">{tr(language, 'Care history', '互动记录')}</h3></div><div className="space-y-3 max-h-44 overflow-y-auto">{pet.events.length === 0 ? <p className="text-xs text-on-surface-variant leading-relaxed">{tr(language, 'Your care activity will appear here.', '互动记录会保存在这里。')}</p> : pet.events.slice(0, 6).map(event => <div key={event.id} className="flex gap-2.5 items-center"><AppIcon className="app-icon rounded-xl bg-primary/8 text-primary p-2 text-base">{actions.find(a => a.key === event.action)?.icon || 'favorite'}</AppIcon><div className="min-w-0 grow"><p className="text-xs truncate">{event.user_id === userId ? tr(language, 'You', '你') : event.name} · {language === 'zh' ? actions.find(a => a.key === event.action)?.zh : actions.find(a => a.key === event.action)?.en}</p><p className="text-[9px] text-on-surface-variant mt-1">{new Date(event.created_at).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p></div><span className="text-[10px] text-primary">+{event.xp_gain} XP</span></div>)}</div></section>
+        </aside>
+      </div>
+      <div className="min-h-6" role="status" aria-live="polite">{failure ? <p className="care-sync-note text-sm">{failure}</p> : notice ? <p className="text-center text-sm text-primary font-semibold">{notice}</p> : null}</div>
+      <section className="care-panel p-5 sm:p-7"><div className="flex justify-between items-center gap-3"><div><p className="text-[10px] tracking-[.18em] uppercase text-primary">{tr(language, 'GROWTH', '成长阶段')}</p><h3 className="text-lg font-headline font-semibold mt-1">{tr(language, 'See how your companion develops.', '看见每个阶段的变化。')}</h3></div><AppIcon className="app-icon text-primary">auto_awesome</AppIcon></div><div className="grid grid-cols-3 gap-2 sm:gap-5 mt-5">{GROWTH_STAGES.map((s, i) => <div className={`care-growth-card ${i === progress.index ? 'is-current' : ''}`} key={s.en}><div className="care-growth-art"><HealingAnimal kind={pet.kind} growthStage={i as 0 | 1 | 2} mood={owner ? undefined : 'calm'} /></div><p className="font-semibold text-[11px] sm:text-sm mt-2">{language === 'zh' ? s.zh : s.en}</p><p className="care-growth-detail">{language === 'zh' ? s.detailZh : s.detailEn}</p><p className="text-[10px] text-on-surface-variant mt-1">{s.minimum} XP · {pet.xp >= s.minimum ? tr(language, 'Unlocked', '已解锁') : tr(language, 'Preview', '成长预览')}</p></div>)}</div></section>
+      <div className="grid lg:grid-cols-2 gap-5">
+        <section className="care-panel p-5 sm:p-7" id="care-friends"><div className="flex items-center gap-2"><AppIcon className="app-icon text-primary">group</AppIcon><h3 className="text-lg font-bold">{tr(language, 'Shared care', '和好友共同照顾')}</h3></div><p className="text-xs leading-relaxed text-on-surface-variant mt-2">{tr(language, 'Invite up to five friends. Everyone cares for the same companion and shares its growth.', '最多邀请五位好友，一起照顾同一只伙伴，共享成长进度。')}</p>
+          <div className="mt-4 flex flex-wrap gap-2">{pet.members.map(member => <span key={member.id} className="care-pill"><AppIcon className="app-icon text-sm">{member.id === pet.owner_id ? 'cottage' : 'person'}</AppIcon>{member.id === userId ? tr(language, 'You', '你') : member.name}{owner && member.id !== userId && <button disabled={socialBusy} aria-label={tr(language, `Remove ${member.name}`, `移除${member.name}`)} onClick={() => void social(async () => { const next = await manageCareHome(pet, 'remove', { member_id: member.id }); if (next) care.replace(next); setInvite(null); })} className="text-primary ml-1">×</button>}</span>)}</div>
+          {online && owner && <div className="mt-4 flex flex-wrap gap-2"><button className="care-button" disabled={socialBusy} onClick={() => void social(async () => setInvite({ petId: pet.id, code: await createCareInvite(pet) }))}>{tr(language, 'Create invitation', '生成邀请码')}</button><button className="care-button secondary" disabled={socialBusy} onClick={() => void social(async () => { await manageCareHome(pet, 'revoke'); setInvite(null); setNotice(tr(language, 'Invitations revoked. Existing members stay.', '旧邀请码已失效，现有成员保留。')); })}>{tr(language, 'Revoke invitations', '停用邀请码')}</button></div>}
+          {invite?.petId === pet.id && <div className="mt-3 rounded-2xl bg-[#eaf2f9] p-4"><p className="text-[10px] text-on-surface-variant">{tr(language, 'Give this code to your friends · expires in 7 days', '将邀请码发给好友 · 七天有效')}</p><p className="font-mono font-bold tracking-[.18em] text-primary text-lg my-2 select-all">{invite.code}</p><button className="text-xs text-primary underline" onClick={() => void navigator.clipboard.writeText(invite.code).then(() => setNotice(tr(language, 'Invitation copied.', '邀请码已复制。'))).catch(() => setNotice(tr(language, 'Select the code and copy it manually.', '选中邀请码即可手动复制。')))}>{tr(language, 'Copy code', '复制邀请码')}</button></div>}
+          {online ? <form className="flex gap-2 mt-5" onSubmit={e => { e.preventDefault(); void social(async () => { const joined = await joinCareHome(joinCode); care.replace(joined); setRoomId(joined.id); setJoinCode(''); }); }}><label className="grow min-w-0"><span className="text-xs font-semibold">{tr(language, 'Join a friend’s home', '加入好友的空间')}</span><input required maxLength={16} value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder={tr(language, '12-character invitation code', '输入十二位邀请码')} className="care-input mt-2 font-mono" /></label><button className="care-button self-end" disabled={socialBusy || !joinCode.trim()}>{tr(language, 'Join', '加入')}</button></form> : <p className="mt-4 text-xs text-primary">{tr(language, 'Sign in to your online home above to invite or join friends.', '在页面上方登录在线空间后，即可邀请或加入好友。')}</p>}
+          {care.pets.some(p => p.owner_id !== userId) && <div className="mt-5 space-y-2"><p className="text-xs font-semibold">{tr(language, 'Friend homes', '好友空间')}</p>{care.pets.filter(p => p.owner_id !== userId).map(p => <button key={p.id} className={`care-friend-home ${pet.id === p.id ? 'is-active' : ''}`} disabled={care.busy || socialBusy} onClick={() => setRoomId(p.id)}><AppIcon className="app-icon text-primary">cottage</AppIcon><span className="grow text-left text-xs">{p.name || (language === 'zh' ? COMPANION_CHOICES.find(c => c.kind === p.kind)?.zh : COMPANION_CHOICES.find(c => c.kind === p.kind)?.en)} · {p.members.find(m => m.id === p.owner_id)?.name}</span><span className="text-[10px] text-primary">Lv. {growthProgress(p.xp).level}</span></button>)}</div>}
+          {!owner && online && <button className="text-xs text-on-surface-variant underline mt-4" disabled={socialBusy} onClick={() => void social(async () => { await manageCareHome(pet, 'leave'); setRoomId(null); await care.refresh(); })}>{tr(language, 'Leave this friend’s home', '退出这个好友空间')}</button>}
+          {owner && <form className="mt-5 flex gap-2" onSubmit={e => { e.preventDefault(); if (!petName.trim()) return; if (!online) { care.replace({ ...pet, name: petName.trim() }); setNotice(tr(language, 'Companion name saved.', '伙伴名字已保存。')); return; } void social(async () => { const next = await manageCareHome(pet, 'rename', { name: petName.trim() }); if (next) care.replace(next); setNotice(tr(language, 'Companion name saved.', '伙伴名字已保存。')); }); }}><label className="grow min-w-0"><span className="text-xs font-semibold">{tr(language, 'Companion name', '伙伴名字')}</span><input maxLength={30} value={petName} onChange={e => setPetName(e.target.value)} placeholder={name} className="care-input mt-2" /></label><button className="care-button secondary self-end" disabled={socialBusy || !petName.trim()}>{tr(language, 'Save', '保存')}</button></form>}
+        </section>
+        <section className="care-panel p-5 sm:p-7"><div className="flex items-center gap-2"><AppIcon className="app-icon text-primary">edit_note</AppIcon><h3 className="text-lg font-bold">{tr(language, 'Daily Planner', '每日计划便签')}</h3></div><p className="text-xs text-on-surface-variant mt-2">{tr(language, 'Make a little space for yourself, too.', '照顾伙伴，也别忘了照顾自己。')}</p><form className="mt-4 space-y-3" onSubmit={e => { e.preventDefault(); savePlan(); }}><label className="block text-xs">{tr(language, 'Date', '日期')}<input type="date" required value={planDate} onChange={e => { setPlanDate(e.target.value); setPlanText(plans[e.target.value] || ''); }} className="care-input mt-2" /></label><label className="block text-xs">{tr(language, 'Plan Note', '计划内容')}<textarea maxLength={3000} value={planText} onChange={e => setPlanText(e.target.value)} placeholder={tr(language, 'One thing to do, one thing you finished, or a little kindness…', '写下一件想做的事、已完成的事，或者一份小小的温柔…')} className="care-input min-h-28 mt-2 resize-y" /></label><button className="care-button w-full" disabled={!planText.trim()}>{tr(language, 'Save Plan', '保存计划')}</button></form><div className="mt-4 max-h-36 overflow-auto space-y-2">{Object.entries(plans).sort(([a], [b]) => b.localeCompare(a)).slice(0, 7).map(([date, text]) => <button key={date} onClick={() => { setPlanDate(date); setPlanText(text); }} className="text-left w-full border-b border-primary/10 pb-2"><span className="text-[10px] text-primary font-semibold">{date}</span><p className="text-xs mt-1 text-on-surface-variant whitespace-pre-wrap">{text}</p></button>)}</div>{Object.keys(legacyPlans).length > 0 && <div className="mt-4"><button className="text-xs underline text-on-surface-variant" onClick={() => setShowLegacy(v => !v)}>{tr(language, 'View previous device notes', '查看设备中原来的便签')}</button>{showLegacy && <div className="text-xs mt-3 max-h-28 overflow-auto space-y-2">{Object.entries(legacyPlans).sort(([a], [b]) => b.localeCompare(a)).map(([date, text]) => <p key={date}>{date}: {text}</p>)}</div>}</div>}</section>
+      </div>
+    </main>
+    {breathingPet && <CareBreathing language={language} onClose={() => setBreathingPet(null)} onComplete={() => { const target = breathingPet; setBreathingPet(null); void commitAction('breathe', target); }} />}
+  </div>;
 }

@@ -1,3 +1,4 @@
+import AppIcon from '../components/AppIcon';
 import { motion } from 'motion/react';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import ProfileAvatarMenu from '../components/ProfileAvatarMenu';
@@ -51,6 +52,9 @@ export default function ConnectScreen({ language }: { language: AppLanguage }) {
   const handlePickMedia = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 6 * 1024 * 1024) {
+      setError(tr(language, 'Choose a photo or video up to 6 MB.', '请选择不超过 6 MB 的图片或视频。')); return;
+    }
 
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
@@ -108,8 +112,8 @@ export default function ConnectScreen({ language }: { language: AppLanguage }) {
       <header className="bg-background/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/5">
         <div className="flex items-center justify-between px-8 py-4 w-full max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary text-2xl">waves</span>
-            <h1 className="text-xl font-bold text-primary font-headline tracking-tight">PuffSqueeze Connect</h1>
+            <AppIcon className="app-icon text-primary text-2xl">waves</AppIcon>
+            <h1 className="text-xl font-bold text-primary font-headline tracking-tight">PuffSqueeze</h1>
           </div>
           <ProfileAvatarMenu userId={userId} sizeClassName="w-10 h-10" language={language} />
         </div>
@@ -146,7 +150,7 @@ export default function ConnectScreen({ language }: { language: AppLanguage }) {
                     onClick={clearMedia}
                     className="absolute top-2 right-2 bg-black/55 text-white w-8 h-8 rounded-full flex items-center justify-center"
                   >
-                    <span className="material-symbols-outlined text-sm">close</span>
+                    <AppIcon className="app-icon text-sm">close</AppIcon>
                   </button>
                 </div>
               )}
@@ -166,7 +170,7 @@ export default function ConnectScreen({ language }: { language: AppLanguage }) {
                     className="p-2 rounded-xl h-10 w-10 flex items-center justify-center hover:bg-white/40 transition-colors text-primary/70"
                     title={tr(language, 'Add image or video', '添加图片或视频')}
                   >
-                    <span className="material-symbols-outlined text-xl">perm_media</span>
+                    <AppIcon className="app-icon text-xl">perm_media</AppIcon>
                   </button>
                 </div>
                 <button

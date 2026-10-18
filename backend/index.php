@@ -13,6 +13,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 
 $routes = [
+    '/api/password/change' => __DIR__ . '/api/password_change.php',
+    '/api/logout' => __DIR__ . '/api/logout.php',
+    '/api/user-data' => __DIR__ . '/api/user_data.php',
+    '/api/care' => __DIR__ . '/api/care.php',
     '/api/health' => __DIR__ . '/api/health.php',
     '/api/register' => __DIR__ . '/api/register.php',
     '/api/login' => __DIR__ . '/api/login.php',

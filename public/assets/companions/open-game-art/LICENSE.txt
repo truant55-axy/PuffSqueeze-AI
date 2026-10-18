@@ -1,0 +1,3 @@
+Dog companion
+
+dog-soft.svg is an original SVG illustration created for this project, using soft gradients, rounded shapes, and warm muted colors to fit the companion artwork on the home screen.

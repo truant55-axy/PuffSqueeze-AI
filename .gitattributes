@@ -1,0 +1,6 @@
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+*.mjs text eol=lf
+.htaccess text eol=lf
+.user.ini text eol=lf

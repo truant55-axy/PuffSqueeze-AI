@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../services/auth_service.php';
 require_once __DIR__ . '/../services/metrics_service.php';
 
 applyCors();
 requireMethod('POST');
 
 $body = getJsonBody();
-$userId = (int)($body['user_id'] ?? 0);
+$userId = authenticatedUserId();
 $displayName = trim((string)($body['display_name'] ?? ''));
 $ageRaw = $body['age'] ?? null;
 $gender = trim((string)($body['gender'] ?? ''));

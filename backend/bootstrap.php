@@ -24,6 +24,8 @@ function loadEnv(string $path): void
         }
 
         $key = trim($parts[0]);
+        // Container/server variables take precedence over an old local .env.
+        if (getenv($key) !== false) continue;
         $value = trim($parts[1]);
         $value = trim($value, "\"'");
 
@@ -43,9 +45,17 @@ function envValue(string $key, ?string $default = null): ?string
     return (string) $value;
 }
 
+date_default_timezone_set((string)envValue('APP_TIMEZONE', 'Asia/Shanghai'));
+
 function jsonResponse(array $data, int $status = 200): void
 {
+    if ($status >= 500 && isset($data['message'])) {
+        error_log('PuffSqueeze API: ' . (string)$data['message']);
+        $data['message'] = 'Server temporarily unavailable. Please try again.';
+    }
     http_response_code($status);
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
@@ -53,14 +63,23 @@ function jsonResponse(array $data, int $status = 200): void
 
 function applyCors(): void
 {
-    $origin = envValue('ALLOWED_ORIGIN', '*');
-    header('Access-Control-Allow-Origin: ' . $origin);
-    header('Access-Control-Allow-Headers: Content-Type');
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowed = array_filter(array_map('trim', explode(',', (string)envValue('ALLOWED_ORIGIN', ''))));
+    if ($origin !== '' && in_array($origin, $allowed, true)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Vary: Origin');
+    }
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 }
 
 function getJsonBody(): array
 {
+    static $body = null;
+    if ($body !== null) return $body;
+    if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 12 * 1024 * 1024) {
+        jsonResponse(['success' => false, 'message' => 'Request exceeds 12 MB'], 413);
+    }
     $raw = file_get_contents('php://input');
     if ($raw === false || $raw === '') {
         return [];
@@ -71,7 +90,8 @@ function getJsonBody(): array
         jsonResponse(['success' => false, 'message' => 'Invalid JSON body'], 400);
     }
 
-    return $data;
+    $body = $data;
+    return $body;
 }
 
 function requireMethod(string $method): void

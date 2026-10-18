@@ -1,4 +1,6 @@
-import { MouseEvent, useMemo, useState } from 'react';
+import AppIcon from '../components/AppIcon';
+import { MouseEvent, useMemo, useState, useRef } from 'react';
+import { recordActivity } from '../services/accountSync';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppLanguage, tr } from '../i18n';
 import { Screen } from '../types';
@@ -60,6 +62,8 @@ export default function StressQuestionnaireScreen({
   const [questions, setQuestions] = useState<Question[]>(() => pickFive());
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState(0);
+  const answers = useRef<{ question_id: number; answer: string; score: number }[]>([]);
+  const answering = useRef(false);
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
 
   const current = questions[idx];
@@ -135,16 +139,23 @@ export default function StressQuestionnaireScreen({
   }, [finished, language, score]);
 
   const answer = (opt: Option, ev: MouseEvent<HTMLButtonElement>) => {
+    if (answering.current || !current) return;
+    answering.current = true;
+    const answerRecord = { question_id: current.id, answer: opt.key, score: opt.score };
+    answers.current.push(answerRecord);
+    void recordActivity('mood_quiz_answer', answerRecord);
     const rect = (ev.currentTarget.parentElement as HTMLDivElement).getBoundingClientRect();
     const ripple = { id: Date.now(), x: ev.clientX - rect.left, y: ev.clientY - rect.top };
     setRipples((p) => [...p, ripple]);
     setTimeout(() => setRipples((p) => p.filter((r) => r.id !== ripple.id)), 650);
     const next = score + opt.score;
     setScore(next);
-    setTimeout(() => setIdx((p) => p + 1), 180);
+    if (idx + 1 === questions.length) void recordActivity('mood_quiz_complete', { score: next, answers: [...answers.current], questionnaire: 'deep_sea_v1' });
+    setTimeout(() => { setIdx((p) => p + 1); answering.current = false; }, 180);
   };
 
   const restart = () => {
+    answers.current = []; answering.current = false;
     setQuestions(pickFive());
     setIdx(0);
     setScore(0);
@@ -156,7 +167,7 @@ export default function StressQuestionnaireScreen({
     <div className={`min-h-screen relative z-20 bg-gradient-to-br ${result?.bg ?? 'from-slate-900 via-blue-900 to-cyan-900'} ${textToneClass}`}>
       <header className="px-6 py-4 flex items-center gap-3 border-b border-white/10 backdrop-blur-md">
         <button type="button" onClick={onBack} className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
-          <span className="material-symbols-outlined">arrow_back</span>
+          <AppIcon className="app-icon">arrow_back</AppIcon>
         </button>
         <h1 className="text-xl font-black">{tr(language, 'Deep Sea Lab', '深海实验室')}</h1>
       </header>

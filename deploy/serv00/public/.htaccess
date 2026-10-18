@@ -1,0 +1,30 @@
+Options -Indexes
+DirectoryIndex index.html
+AddType application/x-httpd-php83 .php
+
+RewriteEngine On
+
+# The domain must already have a valid HTTPS certificate before going live.
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=302,L]
+
+# Never expose hidden files, configuration or unexpected PHP entry points.
+RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(backend|puffsqueeze-private|deploy|src|node_modules)(/|$) - [F,L,NC]
+RewriteRule \.(sql|log|ini|bak|env|zip|tar|gz)$ - [F,L,NC]
+RewriteRule ^(?!api\.php$).*\.php$ - [F,L,NC]
+
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteRule ^api(/|$) api.php [QSA,L]
+
+# Serve real game files and assets directly; other paths enter the React app.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+<FilesMatch "\.(html|htm)$">
+  Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+</FilesMatch>
+Header set X-Content-Type-Options "nosniff"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+Header set X-Frame-Options "SAMEORIGIN"

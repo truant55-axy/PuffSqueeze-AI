@@ -1,0 +1,60 @@
+# Growth V3 · 圆润陪伴形态
+
+使用内置 image_gen 生成探索期与成熟期透明图集，再用内置 image_gen 直接编辑两套图集的困倦表情。原图透明通道保留，未用程序修改位图。旧素材留存。初遇期及原有成长经验保持原样。
+
+## 最终素材路径
+
+项目：`E:/STUDY/year4/ENT/PuffSqueeze-AI-main/`
+
+- `public/assets/companions/generated/growth-explorer-atlas-v3.png`
+- `public/assets/companions/generated/growth-explorer-sleepy-atlas-v3.png`
+- `public/assets/companions/generated/growth-mature-atlas-v3.png`
+- `public/assets/companions/generated/growth-mature-sleepy-atlas-v3.png`
+
+## 接入
+
+`src/components/growthVisuals.ts` 的 SVG 视口按每只动物完整轮廓裁切图集；`HealingAnimal.tsx` 在 V3 的空白眼部绘制即时眼睛，并保留眨眼、开心、疲惫的状态。`sleepyVisuals.ts` 在升级阶段选择专门的下垂眼皮、哈欠嘴图集，避免复用旧成长形象。首页、正念陪伴和悬浮伙伴共用这组形象。成长阈值仍为 120 / 320 XP。captain bird 继续为白色卷翘头羽、浅蓝无字衣服。
+
+初遇期不变；探索期保留短肢、大头和活泼姿态；成熟期用更饱满的体态与柔软坐卧姿态体现成长。没有增加多余装饰或更改页面配色。
+
+浏览器预览：`http://localhost:3000/previews/growth-v3.html`
+
+## 形象生成参考
+
+1. `public/assets/companions/generated/growth-explorer-atlas-v2.png`
+2. `public/assets/companions/generated/puff-bird-v5.png`
+3. `public/assets/companions/generated/cat-cozy-v2.png`
+4. `public/assets/companions/generated/dog-spaniel-v2.png`
+5. `public/assets/companions/generated/pig-seated-v2.png`
+
+## 最终提示词
+
+### explorer · 常规形象
+
+生成原件：`C:\Users\zhao\.codex\generated_images\01a13944-62b5-7290-a7fd-930908642058\exec-d51629e4-53ff-4233-8915-a0571e42e5ce.png`
+
+Use case: stylized-concept. Create a transparent sprite atlas for PuffSqueeze's healing companion series. Input image 1 is the existing 8-animal atlas, an identity and palette reference only: bird, tabby cat, spaniel, pig, penguin, owl, seagull, dolphin in row order. Input images 2-5 are the preferred cute rendering-style and identity references: new white hooked-curl blue-shirt bird, round gray-blue cream tabby baby, golden floppy-eared spaniel baby, pink pig baby. Replace image1's older bird with image2's precise hooked-curl egg-shaped identity. Match images2-5's rounder softer cuter plush proportions across ALL eight animals. The other four retain image1 colors: slate-blue penguin, caramel cream owl, white gray-wing seagull, light-blue white-belly dolphin. Match their existing soft shaded illustrated plush texture and delicate pastel colors. This is an upgraded GROWTH form of those same eight characters, redesigned to be cuter. All retain large soft round heads, rounded cheeks, tiny muzzles/beaks, short stubby paws/feet, plump pillowy bodies and relaxed gentle natural poses. Juvenile charm even when grown. No realistic anatomy, long skinny legs, tiny adult heads, huge wing fans, exaggerated hands or sharp pointed forms. No accessories except the bird's plain light BLUE shirt without lettering and dog's blue collar. No hats, scarves, ribbons, props, human clothing on other animals. CRITICAL ANIMATION REQUIREMENT: leave the EYE AREAS COMPLETELY BLANK, no eyes, eyelids, eyebrows, eyelashes, pupils or dark eye lines whatsoever; we add blinking eyes in code. Keep noses, small closed relaxed mouths, cheeks and beaks. Smile mouths should be SMALL AND CLOSED; birds keep small CLOSED beaks. ATLAS LAYOUT STRICT: wide canvas exactly 2:1 aspect ratio, 4 equal columns by 2 equal rows, eight separate square cells, one full-body sprite centered in each cell, every sprite fits inside the central 78% of its cell. Generous transparent gaps between cells, NO overlap, no part crossing a cell edge. Row1: bird, cat, dog, pig. Row2: penguin, owl, seagull, dolphin. No labels, no backgrounds, no floor shadows. Genuine transparent alpha background. All eight sprites similarly sized within their own cells. Keep the original smooth plush illustration style, not photorealism or pixel art. EXPLORER / middle growth stage: recognizable transition from tiny baby to a curious growing companion, still very cute. Bird: plump upright white egg with thick single curl hooking image-left, tucked small wings with one wing slightly greeting, tiny yellow feet, blue shirt. Cat: sitting upright, slightly longer body than baby, round fluffy head, softly curled upright tail with cream tip, short paws. Dog: a gentle playful bow on four short paws, fluffy cream chest, big soft drop ears and rounded muzzle, blue collar. Pig: low squat standing naturally on FOUR short legs, rounded pink tummy, round snout and little floppy ears, curly tail, absolutely not human standing. Penguin: rounded oval body with small flippers slightly out, short feet close together, slate-blue and cream. Owl: small round fluffy perched body with wings tucked close, soft layered plumage and tiny feet, no giant eyebrows. Seagull: squat seated rounded body with tucked gray wings and little yellow feet, short neck. Dolphin: softly curved ascending pose, round forehead, small rounded muzzle, tiny rounded flippers, tapering curved tail, light blue. Each species must have noticeably developed silhouette and pose compared with reference baby but without becoming lanky.
+
+### mature · 常规形象
+
+生成原件：`C:\Users\zhao\.codex\generated_images\01a13944-62b5-7290-a7fd-930908642058\exec-0e24997f-c9f9-40fd-950b-322dfa0fd8b0.png`
+
+Use case: stylized-concept. Create a transparent sprite atlas for PuffSqueeze's healing companion series. Input image 1 is the existing 8-animal atlas, an identity and palette reference only: bird, tabby cat, spaniel, pig, penguin, owl, seagull, dolphin in row order. Input images 2-5 are the preferred cute rendering-style and identity references: new white hooked-curl blue-shirt bird, round gray-blue cream tabby baby, golden floppy-eared spaniel baby, pink pig baby. Replace image1's older bird with image2's precise hooked-curl egg-shaped identity. Match images2-5's rounder softer cuter plush proportions across ALL eight animals. The other four retain image1 colors: slate-blue penguin, caramel cream owl, white gray-wing seagull, light-blue white-belly dolphin. Match their existing soft shaded illustrated plush texture and delicate pastel colors. This is an upgraded GROWTH form of those same eight characters, redesigned to be cuter. All retain large soft round heads, rounded cheeks, tiny muzzles/beaks, short stubby paws/feet, plump pillowy bodies and relaxed gentle natural poses. Juvenile charm even when grown. No realistic anatomy, long skinny legs, tiny adult heads, huge wing fans, exaggerated hands or sharp pointed forms. No accessories except the bird's plain light BLUE shirt without lettering and dog's blue collar. No hats, scarves, ribbons, props, human clothing on other animals. CRITICAL ANIMATION REQUIREMENT: leave the EYE AREAS COMPLETELY BLANK, no eyes, eyelids, eyebrows, eyelashes, pupils or dark eye lines whatsoever; we add blinking eyes in code. Keep noses, small closed relaxed mouths, cheeks and beaks. Smile mouths should be SMALL AND CLOSED; birds keep small CLOSED beaks. ATLAS LAYOUT STRICT: wide canvas exactly 2:1 aspect ratio, 4 equal columns by 2 equal rows, eight separate square cells, one full-body sprite centered in each cell, every sprite fits inside the central 78% of its cell. Generous transparent gaps between cells, NO overlap, no part crossing a cell edge. Row1: bird, cat, dog, pig. Row2: penguin, owl, seagull, dolphin. No labels, no backgrounds, no floor shadows. Genuine transparent alpha background. All eight sprites similarly sized within their own cells. Keep the original smooth plush illustration style, not photorealism or pixel art. MATURE / final growth stage: clearly further developed than the baby and middle stage through a fuller silhouette, richer smooth fluffy fur/feathers and a distinct relaxed pose, while staying just as round and cute. Bird: wide soft pear/egg body, shorter head-to-body ratio than baby but still cute, SITTING comfortably over small yellow feet with little rounded wings resting over its tummy, white hooked curl bending image-left and plain light-blue shirt. No huge arms. Cat: grown plush cat lying comfortably on its belly, front paws together under a raised round fluffy head, longer body and big sweeping curled cream-tipped tail around side. Dog: grown fluffy spaniel lying on belly with two short front paws stretched slightly forward, wavy floppy ears framing a still large round head, very soft rounded muzzle and blue collar. Pig: grown round pink pig resting belly-down with four short legs tucked visibly by sides, little curly tail and floppy ears, round gentle snout; no boar tusks and no human standing. Penguin: full round soft oval body, slightly broader cream belly, one short flipper resting on belly and the other close to side, leaning gently, small yellow feet. Owl: very round thick fluffy oval body nestled low on tiny feet, soft fuller feather layers, wings only gently opened a little with ROUND tips, friendly large round head. Seagull: fuller longer oval body resting low with folded gray wings, very short neck, round head tilted slightly, small yellow feet peeking. Dolphin: graceful chunky C-curved resting swimming pose with rounded snout and fuller round forehead, soft rounded flippers and curled tail, light blue white belly. These are mature cozy companions, not real adult animals. Keep every face's eye areas fully blank for code-rendered eyes.
+
+### explorer · 困倦五官编辑
+
+编辑对象：`public/assets/companions/generated/growth-explorer-atlas-v3.png`
+
+生成原件：`C:\Users\zhao\.codex\generated_images\01a13944-62b5-7290-a7fd-930908642058\exec-ade920bc-15ea-4af6-ba8f-bf4a957c12d4.png`
+
+Use case: precise-object-edit. Edit target: supplied transparent 8-character atlas. Change ONLY the eight faces to a cute SLEEPY YAWN expression. All eight currently have blank eyes: add two round soft heavy upper eyelids in the natural eye locations, visibly drooping toward the outer corners and mostly covering tiny pupils below. No happy upward arch smile eyes. Give every animal a clear vertically OPEN OVAL YAWNING mouth, warm dark interior and a small soft pink tongue. Cat, dog and pig have mouths under their noses/snouts; retain noses and pig's two nostrils. All four bird species open their existing yellow beaks downward as a yawn, never draw a separate mouth under a closed beak. Dolphin opens its jaw downward while keeping its original blue muzzle. Small relaxed cute yawns, no sad/angry eyebrows, no scary gaping mouths. Preserve EXACTLY the original body proportions, paws, feet, tails, wing poses, species/colors, plain blue bird shirt without lettering, blue dog collar, rounded plush style, transparent margins, layout, framing, sprite locations and canvas dimensions. No moving, scaling, reordering or redesigning any of the eight bodies. Same 4 columns by 2 rows 2:1 transparent atlas. Genuine alpha, no shadows, props, text or Z symbols. Face-only change.
+
+### mature · 困倦五官编辑
+
+编辑对象：`public/assets/companions/generated/growth-mature-atlas-v3.png`
+
+生成原件：`C:\Users\zhao\.codex\generated_images\01a13944-62b5-7290-a7fd-930908642058\exec-0125c54c-5aaa-448b-a7b4-26b432b51c81.png`
+
+Use case: precise-object-edit. Edit target: supplied transparent 8-character atlas. Change ONLY the eight faces to a cute SLEEPY YAWN expression. All eight currently have blank eyes: add two round soft heavy upper eyelids in the natural eye locations, visibly drooping toward the outer corners and mostly covering tiny pupils below. No happy upward arch smile eyes. Give every animal a clear vertically OPEN OVAL YAWNING mouth, warm dark interior and a small soft pink tongue. Cat, dog and pig have mouths under their noses/snouts; retain noses and pig's two nostrils. All four bird species open their existing yellow beaks downward as a yawn, never draw a separate mouth under a closed beak. Dolphin opens its jaw downward while keeping its original blue muzzle. Small relaxed cute yawns, no sad/angry eyebrows, no scary gaping mouths. Preserve EXACTLY the original body proportions, paws, feet, tails, wing poses, species/colors, plain blue bird shirt without lettering, blue dog collar, rounded plush style, transparent margins, layout, framing, sprite locations and canvas dimensions. No moving, scaling, reordering or redesigning any of the eight bodies. Same 4 columns by 2 rows 2:1 transparent atlas. Genuine alpha, no shadows, props, text or Z symbols. Face-only change.
+
+

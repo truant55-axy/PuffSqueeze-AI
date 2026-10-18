@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../services/auth_service.php';
 require_once __DIR__ . '/../services/ai_service.php';
 require_once __DIR__ . '/../services/metrics_service.php';
 
@@ -9,7 +9,7 @@ applyCors();
 requireMethod('POST');
 
 $body = getJsonBody();
-$userId = (int)($body['user_id'] ?? 0);
+$userId = authenticatedUserId();
 $message = trim((string)($body['message'] ?? ''));
 $history = is_array($body['history'] ?? null) ? $body['history'] : [];
 $strikeLevel = trim((string)($body['strike_level'] ?? 'unknown'));
@@ -18,6 +18,7 @@ $deviceData = is_array($body['device_data'] ?? null) ? $body['device_data'] : []
 if ($userId <= 0 || $message === '') {
     jsonResponse(['success' => false, 'message' => 'user_id and message are required'], 422);
 }
+if (mb_strlen($message) > 20000) jsonResponse(['success' => false, 'message' => 'Message is too long'], 422);
 
 try {
     $pdo = db();
