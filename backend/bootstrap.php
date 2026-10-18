@@ -63,9 +63,12 @@ function jsonResponse(array $data, int $status = 200): void
 
 function applyCors(): void
 {
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $allowed = array_filter(array_map('trim', explode(',', (string)envValue('ALLOWED_ORIGIN', ''))));
-    if ($origin !== '' && in_array($origin, $allowed, true)) {
+    $origin = rtrim((string)($_SERVER['HTTP_ORIGIN'] ?? ''), '/');
+    $allowed = array_filter(array_map(static function (string $value): string {
+        return rtrim(trim($value, " \t\n\r\0\x0B\"'"), '/');
+    }, explode(',', (string)envValue('ALLOWED_ORIGIN', ''))));
+    $allowed[] = 'https://puff-squeeze-ai.vercel.app';
+    if ($origin !== '' && in_array($origin, array_unique($allowed), true)) {
         header('Access-Control-Allow-Origin: ' . $origin);
         header('Vary: Origin');
     }
