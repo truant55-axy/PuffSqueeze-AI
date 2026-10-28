@@ -13,7 +13,8 @@ Render only needs the existing PHP container and these environment variables:
 
 ```dotenv
 GEMINI_API_KEY=your_valid_server_side_key
-GEMINI_TRANSCRIBE_MODEL=gemini-flash-latest
+GEMINI_TRANSCRIBE_MODEL=gemini-3.8-flash
+GEMINI_TRANSCRIBE_FALLBACK_MODEL=gemini-3.6-flash
 ```
 
 The same Gemini key may be used by the chat, report and suggestion endpoints.

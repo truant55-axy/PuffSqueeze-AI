@@ -54,7 +54,10 @@ DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt
 MOODLE_TABLE_PREFIX=
 ALLOWED_ORIGIN=https://puff-squeeze-ai.vercel.app
 GEMINI_API_KEY=<Gemini key>
-GEMINI_TRANSCRIBE_MODEL=gemini-flash-latest
+GEMINI_CHAT_MODEL=gemini-3.8-flash
+GEMINI_CHAT_FALLBACK_MODEL=gemini-3.6-flash
+GEMINI_TRANSCRIBE_MODEL=gemini-3.8-flash
+GEMINI_TRANSCRIBE_FALLBACK_MODEL=gemini-3.6-flash
 ELEVENLABS_API_KEY=<ElevenLabs key; required for personal voice cloning>
 ELEVENLABS_TTS_MODEL=eleven_flash_v2_5
 ```

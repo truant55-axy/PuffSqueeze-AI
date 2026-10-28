@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/gemini_http.php';
 
 function strikePromptHint(string $level): string
 {
@@ -27,8 +27,7 @@ function sanitizeAiText(string $text): string
 
 function geminiChat(array $history, string $message, string $strikeLevel, array $deviceData = []): string
 {
-    $apiKey = envValue('GEMINI_API_KEY');
-    if (!$apiKey) {
+    if (!envValue('GEMINI_API_KEY')) {
         throw new RuntimeException('GEMINI_API_KEY is not configured.');
     }
 
@@ -72,34 +71,10 @@ function geminiChat(array $history, string $message, string $strikeLevel, array 
         'contents' => $contents,
     ];
 
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
-
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'X-goog-api-key: ' . $apiKey,
-        ],
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_TIMEOUT => 30,
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
-
-    if ($response === false || $curlError !== '') {
-        throw new RuntimeException('Gemini request failed: ' . $curlError);
-    }
-
-    if ($httpCode < 200 || $httpCode >= 300) {
-        throw new RuntimeException('Gemini request failed with HTTP ' . $httpCode . ': ' . $response);
-    }
-
-    $json = json_decode($response, true);
+    $json = geminiGenerateContent($payload, [
+        geminiModel('GEMINI_CHAT_MODEL', 'gemini-3.8-flash'),
+        geminiModel('GEMINI_CHAT_FALLBACK_MODEL', 'gemini-3.6-flash'),
+    ], 'chat');
     $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? null;
     if (!is_string($text) || trim($text) === '') {
         throw new RuntimeException('Gemini returned empty content.');
