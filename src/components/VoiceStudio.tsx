@@ -92,6 +92,11 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
     recorder_unsupported: t('This browser cannot record audio. Try Chrome or Edge.', '此浏览器不支持录音，请使用 Chrome 或 Edge。'),
     mic_denied: t('Microphone access was denied. Allow it in the address bar, then try again.', '麦克风权限未开启，请在地址栏允许使用后重试。'),
     transcription_unavailable: t('Transcription is unavailable. Listen to the original and fill in your words below, or record again.', '暂时无法识别，请重录，或试听原声后在下方填写文字。'),
+    transcription_timeout: t('Recognition timed out. Keep this recording and try recognition again.', '识别请求超时，录音已保留，请点击重新识别。'),
+    network_unavailable: t('The recording could not reach the server. Check the connection, then retry recognition.', '录音没有成功发送到服务器，请检查网络后重新识别。'),
+    login_required: t('Your login expired. Sign in again before retrying recognition.', '登录状态已失效，请重新登录后再识别。'),
+    transcription_not_configured: t('The server transcription key is not configured.', '服务器尚未配置语音识别密钥。'),
+    recording_storage_unavailable: t('The words may have been recognized, but the recording could not be saved to the cloud database.', '语音可能已识别，但录音无法保存到云数据库。'),
     no_transcript: t('No words were recognized. Record again or type what you said below.', '没有识别到文字，可以重新录音或在下方填写你说的话。'),
     recording_failed: t('Recording failed. Check your microphone and try again.', '录音未成功，请检查麦克风后重试。'),
   } as Record<string, string>)[recording.notice];
@@ -174,6 +179,7 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
         <audio ref={originalPlayer} data-voice-studio-audio controls src={recording.originalUrl} onPlay={e => pauseOtherAudio(e.currentTarget)} className="w-full h-10" aria-label={t('Original recording', '原声录音')} />
       </div>}
       {notice && <p className="text-xs text-amber-800 mt-3 leading-relaxed" role="status">{notice}</p>}
+      {recording.originalUrl && !recording.transcript.trim() && recording.phase === 'idle' && <button type="button" onClick={() => void recording.retry()} className={`${button} mt-3 bg-white/80 text-primary border border-primary/20 hover:bg-white`}><Sparkles size={14} />{t('Retry recognition', '重新识别')}</button>}
     </div>
 
     <div className="space-y-3">

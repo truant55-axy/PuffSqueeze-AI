@@ -12,7 +12,7 @@ export type VoiceProfile = {
   updated_at: string;
 };
 export class VoiceServiceError extends Error {
-  constructor(public code: string) { super(code); }
+  constructor(public code: string, public status = 0) { super(code); }
 }
 
 let configuredPlayer: HTMLAudioElement | null = null;
@@ -32,11 +32,28 @@ export async function synthesizeVoice(text: string, voice: VoiceId | 'auto', sig
 
 export async function transcribeRecording(audio: Blob, language: string, signal: AbortSignal): Promise<{ text: string; recordingId: number }> {
   const form = new FormData();
-  form.append('audio', audio, 'recording');
+  const extension = audio.type.includes('mp4') ? 'm4a' : audio.type.includes('ogg') ? 'ogg' : audio.type.includes('wav') ? 'wav' : 'webm';
+  form.append('audio', audio, `recording.${extension}`);
   form.append('language', language.startsWith('zh') ? 'zh' : 'en');
-  const response = await apiFetch(`${API_BASE}/api/voice/transcribe`, { method: 'POST', body: form, signal });
+  let response: Response;
+  try {
+    response = await apiFetch(`${API_BASE}/api/voice/transcribe`, {
+      method: 'POST', headers: { Accept: 'application/json' }, body: form, signal, cache: 'no-store',
+    });
+  } catch (error) {
+    if (signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+      throw new VoiceServiceError('transcription_timeout');
+    }
+    throw new VoiceServiceError('network_unavailable');
+  }
   const json = await response.json().catch(() => null);
-  if (!response.ok || !json?.success || typeof json.data?.text !== 'string') throw new VoiceServiceError(json?.code ?? 'voice_unavailable');
+  if (!response.ok || !json?.success || typeof json.data?.text !== 'string') {
+    const code = response.status === 401 ? 'login_required'
+      : response.status === 502 ? 'transcription_unavailable'
+      : response.status === 503 ? 'recording_storage_unavailable'
+      : json?.code ?? 'voice_unavailable';
+    throw new VoiceServiceError(code, response.status);
+  }
   return { text: json.data.text.slice(0, 600), recordingId: Number(json.data.recording_id) || 0 };
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { transcribeRecording } from '../services/voiceStudio';
+import { transcribeRecording, VoiceServiceError } from '../services/voiceStudio';
 
 export type RecordingPhase = 'idle' | 'requesting' | 'recording' | 'finishing';
 
@@ -16,6 +16,8 @@ export function useVoiceRecording() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const requestRef = useRef<AbortController | null>(null);
   const urlRef = useRef('');
+  const audioRef = useRef<Blob | null>(null);
+  const languageRef = useRef('en-US');
   const epochRef = useRef(0);
 
   const changePhase = (next: RecordingPhase) => { phaseRef.current = next; setPhase(next); };
@@ -28,6 +30,30 @@ export function useVoiceRecording() {
     changePhase('finishing'); clearInterval(intervalRef.current);
     if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     releaseMicrophone();
+  };
+
+  const recognize = async (audio: Blob, lang: string, epoch: number) => {
+    const controller = new AbortController(); requestRef.current = controller;
+    const deadline = setTimeout(() => controller.abort(), 40000);
+    changePhase('finishing'); setNotice('');
+    try {
+      const result = await transcribeRecording(audio, lang, controller.signal);
+      if (epoch !== epochRef.current) return;
+      setTranscript(result.text); setRecordingId(result.recordingId);
+      setNotice(result.text.trim() ? '' : 'no_transcript');
+    } catch (error) {
+      if (epoch === epochRef.current) {
+        setNotice(error instanceof VoiceServiceError ? error.code : 'transcription_unavailable');
+      }
+    } finally {
+      clearTimeout(deadline);
+      if (epoch === epochRef.current) { requestRef.current = null; changePhase('idle'); }
+    }
+  };
+
+  const retry = async () => {
+    if (phaseRef.current !== 'idle' || !audioRef.current) return;
+    await recognize(audioRef.current, languageRef.current, epochRef.current);
   };
 
   const start = async (lang: string) => {
@@ -53,19 +79,8 @@ export function useVoiceRecording() {
         urlRef.current = audio.size ? URL.createObjectURL(audio) : '';
         setOriginalUrl(urlRef.current);
         if (audio.size < 100 || audio.size > 2 * 1024 * 1024) { setNotice('recording_failed'); changePhase('idle'); return; }
-        const controller = new AbortController(); requestRef.current = controller;
-        const deadline = setTimeout(() => controller.abort(), 45000);
-        try {
-          const result = await transcribeRecording(audio, lang, controller.signal);
-          if (epoch !== epochRef.current) return;
-          setTranscript(result.text); setRecordingId(result.recordingId);
-          if (!result.text.trim()) setNotice('no_transcript');
-        } catch {
-          if (epoch === epochRef.current) setNotice('transcription_unavailable');
-        } finally {
-          clearTimeout(deadline);
-          if (epoch === epochRef.current) { requestRef.current = null; changePhase('idle'); }
-        }
+        audioRef.current = audio; languageRef.current = lang;
+        await recognize(audio, lang, epoch);
       };
       recorder.onerror = () => {
         if (epoch !== epochRef.current) return;
@@ -73,6 +88,7 @@ export function useVoiceRecording() {
         setNotice('recording_failed'); changePhase('idle');
       };
       setTranscript(''); setRecordingId(0); setSeconds(0);
+      audioRef.current = null; languageRef.current = lang;
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
       urlRef.current = ''; setOriginalUrl('');
       recorder.start(); changePhase('recording');
@@ -94,7 +110,7 @@ export function useVoiceRecording() {
     if (phaseRef.current !== 'idle') return;
     epochRef.current++;
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    urlRef.current = ''; setOriginalUrl(''); setTranscript(''); setRecordingId(0); setSeconds(0); setNotice('');
+    urlRef.current = ''; audioRef.current = null; setOriginalUrl(''); setTranscript(''); setRecordingId(0); setSeconds(0); setNotice('');
   };
 
   useEffect(() => () => {
@@ -107,5 +123,5 @@ export function useVoiceRecording() {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
   }, []);
 
-  return { phase, seconds, transcript, setTranscript, originalUrl, recordingId, notice, start, finish, clear };
+  return { phase, seconds, transcript, setTranscript, originalUrl, recordingId, notice, start, finish, retry, clear };
 }
