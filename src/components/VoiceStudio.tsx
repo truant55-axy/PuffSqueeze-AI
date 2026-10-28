@@ -200,14 +200,12 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
         {busy ? <button type="button" onClick={() => requestRef.current?.abort()} className={`${button} text-on-surface-variant bg-white/60`}>{t('Cancel', '取消')}</button>
           : (text || recording.originalUrl || generated) && <button type="button" disabled={active} onClick={() => { recording.clear(); setGenerated(null); setError(''); }} className={`${button} text-on-surface-variant hover:bg-white/70`}><Trash2 size={14} />{t('Clear', '清空')}</button>}
       </div>
-      <p className="text-[10px] leading-relaxed text-on-surface-variant">{t('Recordings are sent through this app’s server to Gemini for transcription, then the recording and transcript are saved to your account’s cloud database. Conversion sends only your confirmed text to the online voice service.', '录音会通过本应用服务器发送给 Gemini 进行识别，随后录音和识别文字会保存到你的账号云数据库；点击转换时，仅将确认后的文字发送给在线语音合成服务。')}</p>
     </div>
 
     <div className="rounded-3xl bg-white/65 border border-primary/10 p-4 sm:p-5 space-y-4">
       <div className="flex items-start gap-3">
         <ShieldCheck size={19} className="text-primary mt-0.5 shrink-0" />
-        <div><p className="text-xs font-semibold text-on-surface">{t('03 · Create and assign your own voice', '03 · 克隆并设置你自己的声音')}</p>
-        <p className="text-[10px] leading-relaxed text-on-surface-variant mt-1">{t('Use only your own voice. A clear 10–30 second sample works best. Your sample is sent to ElevenLabs to create the clone; its provider voice ID is saved to your account.', '只能使用你本人的声音。建议录制清晰的 10–30 秒样本；样本会发送至 ElevenLabs 创建克隆，服务商声音 ID 会保存到你的账号。')}</p></div>
+        <div><p className="text-xs font-semibold text-on-surface">{t('03 · Create and assign your own voice', '03 · 克隆并设置你自己的声音')}</p></div>
       </div>
       {!profile ? <>
         <label className="block text-xs text-on-surface-variant"><span className="block mb-1.5">{t('Voice name', '声音名称')}</span><input value={cloneName} maxLength={80} disabled={profileBusy} onChange={e => setCloneName(e.target.value)} className="w-full rounded-xl border border-primary/15 bg-white/75 px-3 py-2 text-on-surface" /></label>
