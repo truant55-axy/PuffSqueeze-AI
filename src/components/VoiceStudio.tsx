@@ -203,8 +203,8 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
     </div>
 
     <div className="rounded-3xl bg-white/65 border border-primary/10 p-4 sm:p-5 space-y-4">
-      <div className="flex items-start gap-3">
-        <ShieldCheck size={19} className="text-primary mt-0.5 shrink-0" />
+      <div className="flex items-center gap-3">
+        <ShieldCheck size={19} className="text-primary shrink-0" />
         <div><p className="text-xs font-semibold text-on-surface">{t('03 · Create and assign your own voice', '03 · 克隆并设置你自己的声音')}</p></div>
       </div>
       {!profile ? <>
