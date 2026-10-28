@@ -31,6 +31,19 @@ CREATE TABLE IF NOT EXISTS `puffsqueeze_voice_recordings` (
   CONSTRAINT `fk_ps_voice_user` FOREIGN KEY (`user_id`) REFERENCES `puffsqueeze_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `puffsqueeze_voice_profiles` (
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `provider_voice_id` VARCHAR(128) NOT NULL,
+  `display_name` VARCHAR(80) NOT NULL,
+  `ai_voice` ENUM('ana','xiaoxiao','clone','off') NOT NULL DEFAULT 'clone',
+  `interaction_voice` ENUM('ana','xiaoxiao','clone','off') NOT NULL DEFAULT 'off',
+  `consent_at` DATETIME NOT NULL,
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME NOT NULL,
+  PRIMARY KEY (`user_id`),
+  CONSTRAINT `fk_ps_voice_profile_user` FOREIGN KEY (`user_id`) REFERENCES `puffsqueeze_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `puffsqueeze_device_events` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,

@@ -24,7 +24,7 @@ Supported browser containers are WebM/Opus, OGG, M4A/MP4 audio and WAV. The
 server determines the MIME type from the file signature instead of trusting the
 browser-provided filename or content type.
 
-## Optional neural speech synthesis
+## Neural speech synthesis and personal cloning
 
 Speech synthesis is separate from recognition. It uses Microsoft Edge online
 neural TTS through `edge-tts`: `en-US-AnaNeural` and
@@ -41,9 +41,16 @@ Then set the absolute Python path in `backend/.env`:
 VOICE_PYTHON=E:/path/to/project/.voice-venv/Scripts/python.exe
 ```
 
-Without `VOICE_PYTHON`, transcription still works, while synthesis returns the
-safe `voice_not_configured` response. Render does not need Python for speech
-recognition.
+The Render Docker image installs this worker and sets `VOICE_PYTHON`. Speech
+recognition itself still runs through Gemini and does not use Python.
+
+Personal voice cloning is optional and uses ElevenLabs Instant Voice Cloning.
+Keep `ELEVENLABS_API_KEY` only in Render and optionally set
+`ELEVENLABS_TTS_MODEL=eleven_flash_v2_5`. An authenticated user must first record
+a sample, confirm that it is their own voice, and explicitly consent. The backend
+loads only that user's sample from TiDB and stores the resulting provider voice
+ID and the separate AI/interaction voice choices in
+`puffsqueeze_voice_profiles`. Users can delete their provider clone from the UI.
 
 ## Data and limits
 
@@ -59,6 +66,8 @@ recognition.
 - Saved generated clips are account documents, limited to three clips and about
   1.8 MB of JSON.
 - Microphone access requires HTTPS or localhost.
+- Voice cloning should use a clear 10–30 second sample and must never be used on
+  another person's voice without their permission.
 
 Official Gemini audio documentation:
 https://ai.google.dev/gemini-api/docs/audio

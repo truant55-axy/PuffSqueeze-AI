@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Mic, Square, Sparkles, Download, Trash2, BookmarkPlus, Check, LoaderCircle, AudioLines } from 'lucide-react';
+import { Mic, Square, Sparkles, Download, Trash2, BookmarkPlus, Check, LoaderCircle, AudioLines, ShieldCheck } from 'lucide-react';
 import { tr, type AppLanguage } from '../i18n';
 import { useVoiceRecording } from '../hooks/useVoiceRecording';
-import { synthesizeVoice, VoiceServiceError, type VoiceClip, type VoiceId } from '../services/voiceStudio';
+import { cloneOwnVoice, deleteVoiceClone, loadVoiceProfile, saveVoicePreferences, synthesizeVoice, VoiceServiceError, type VoiceChoice, type VoiceClip, type VoiceId, type VoiceProfile } from '../services/voiceStudio';
 import { getCurrentUserId } from '../services/session';
 import { accountRecordId, saveAccountItem } from '../services/accountSync';
 
@@ -10,6 +10,7 @@ const LIMIT = 600;
 const voices: { id: VoiceId; en: string; zh: string }[] = [
   { id: 'ana', en: 'Doll voice · English', zh: '玩偶同款 · 英文' },
   { id: 'xiaoxiao', en: 'Gentle voice · Chinese', zh: '温柔女声 · 中文' },
+  { id: 'clone', en: 'My cloned voice', zh: '我的克隆声音' },
 ];
 
 function readClips(key: string): VoiceClip[] {
@@ -18,7 +19,7 @@ function readClips(key: string): VoiceClip[] {
     if (!Array.isArray(clips)) return [];
     return clips.filter((clip): clip is VoiceClip => clip && typeof clip.id === 'string'
       && typeof clip.text === 'string' && clip.text.length <= LIMIT && typeof clip.createdAt === 'string'
-      && ['ana', 'xiaoxiao'].includes(clip.voice) && typeof clip.audio === 'string'
+      && ['ana', 'xiaoxiao', 'clone'].includes(clip.voice) && typeof clip.audio === 'string'
       && /^data:audio\/mpeg;base64,[A-Za-z0-9+/=]+$/.test(clip.audio) && clip.audio.length < 1400000).slice(0, 3);
   } catch { return []; }
 }
@@ -32,6 +33,12 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
   const [generated, setGenerated] = useState<VoiceClip | null>(null);
   const [clips, setClips] = useState(() => readClips(storageKey));
   const [busy, setBusy] = useState(false);
+  const [profile, setProfile] = useState<VoiceProfile | null>(null);
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [cloneName, setCloneName] = useState('My voice');
+  const [cloneConsent, setCloneConsent] = useState(false);
+  const [aiVoice, setAiVoice] = useState<VoiceChoice>('clone');
+  const [interactionVoice, setInteractionVoice] = useState<VoiceChoice>('off');
   const [error, setError] = useState('');
   const requestRef = useRef<AbortController | null>(null);
   const originalPlayer = useRef<HTMLAudioElement | null>(null);
@@ -42,7 +49,43 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
   const currentResult = generated?.text === text && generated.voice === voice;
   const t = (en: string, zh: string) => tr(language, en, zh);
 
-  useEffect(() => () => { requestRef.current?.abort(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadVoiceProfile(controller.signal).then(next => {
+      setProfile(next);
+      if (next) { setCloneName(next.display_name); setAiVoice(next.ai_voice); setInteractionVoice(next.interaction_voice); }
+    }).catch(() => undefined);
+    return () => { controller.abort(); requestRef.current?.abort(); };
+  }, []);
+
+  const createClone = async () => {
+    if (!recording.recordingId || !cloneConsent || profileBusy) return;
+    const controller = new AbortController(); requestRef.current = controller;
+    setProfileBusy(true); setError('');
+    try {
+      const next = await cloneOwnVoice(recording.recordingId, cloneName.trim() || 'My voice', true, controller.signal);
+      setProfile(next); setVoice('clone'); setAiVoice(next.ai_voice); setInteractionVoice(next.interaction_voice); setCloneConsent(false);
+    } catch (err) {
+      if (err instanceof VoiceServiceError && err.code === 'clone_not_configured') setError(t('Voice cloning needs an ElevenLabs key on the server.', '服务器还需要配置 ElevenLabs 密钥才能克隆声音。'));
+      else setError(t('Voice cloning failed. Use a clear 10–30 second recording and try again.', '声音克隆失败，请使用清晰的 10–30 秒录音后重试。'));
+    } finally { if (requestRef.current === controller) requestRef.current = null; setProfileBusy(false); }
+  };
+
+  const savePreferences = async () => {
+    if (!profile || profileBusy) return;
+    setProfileBusy(true); setError('');
+    try { setProfile(await saveVoicePreferences(aiVoice, interactionVoice)); }
+    catch { setError(t('Could not save voice preferences.', '暂时无法保存声音设置。')); }
+    finally { setProfileBusy(false); }
+  };
+
+  const removeClone = async () => {
+    if (!profile || profileBusy || !window.confirm(t('Delete your cloned voice from the voice provider?', '确定从语音服务商删除你的克隆声音吗？'))) return;
+    setProfileBusy(true); setError('');
+    try { await deleteVoiceClone(); setProfile(null); setVoice(language === 'zh' ? 'xiaoxiao' : 'ana'); setAiVoice('clone'); setInteractionVoice('off'); }
+    catch { setError(t('Could not delete the cloned voice. Try again.', '暂时无法删除克隆声音，请重试。')); }
+    finally { setProfileBusy(false); }
+  };
 
   const notice = ({
     secure_context: t('Open this page on HTTPS or localhost to use the microphone.', '请用 HTTPS 或 localhost 打开网页，才能使用麦克风。'),
@@ -140,7 +183,7 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
         className="w-full resize-y rounded-2xl border border-primary/15 bg-white/75 p-3.5 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-2 focus:outline-primary disabled:opacity-70" />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2" role="group" aria-label={t('AI voice', 'AI 音色')}>
-          {voices.map(choice => <button key={choice.id} type="button" aria-pressed={voice === choice.id} disabled={active || busy} onClick={() => setVoice(choice.id)} className={`rounded-full px-3 py-2 text-xs border transition-colors disabled:opacity-50 ${voice === choice.id ? 'bg-primary/10 border-primary/40 text-primary font-semibold' : 'bg-white/60 border-primary/10 text-on-surface-variant hover:bg-white'}`}>{tr(language, choice.en, choice.zh)}</button>)}
+          {voices.filter(choice => choice.id !== 'clone' || profile).map(choice => <button key={choice.id} type="button" aria-pressed={voice === choice.id} disabled={active || busy} onClick={() => setVoice(choice.id)} className={`rounded-full px-3 py-2 text-xs border transition-colors disabled:opacity-50 ${voice === choice.id ? 'bg-primary/10 border-primary/40 text-primary font-semibold' : 'bg-white/60 border-primary/10 text-on-surface-variant hover:bg-white'}`}>{tr(language, choice.en, choice.zh)}</button>)}
         </div>
         <span className="text-[10px] text-on-surface-variant">{recording.transcript.length}/{LIMIT}</span>
       </div>
@@ -152,6 +195,29 @@ export default function VoiceStudio({ language }: { language: AppLanguage }) {
           : (text || recording.originalUrl || generated) && <button type="button" disabled={active} onClick={() => { recording.clear(); setGenerated(null); setError(''); }} className={`${button} text-on-surface-variant hover:bg-white/70`}><Trash2 size={14} />{t('Clear', '清空')}</button>}
       </div>
       <p className="text-[10px] leading-relaxed text-on-surface-variant">{t('Recordings are sent through this app’s server to Gemini for transcription, then the recording and transcript are saved to your account’s cloud database. Conversion sends only your confirmed text to the online voice service.', '录音会通过本应用服务器发送给 Gemini 进行识别，随后录音和识别文字会保存到你的账号云数据库；点击转换时，仅将确认后的文字发送给在线语音合成服务。')}</p>
+    </div>
+
+    <div className="rounded-3xl bg-white/65 border border-primary/10 p-4 sm:p-5 space-y-4">
+      <div className="flex items-start gap-3">
+        <ShieldCheck size={19} className="text-primary mt-0.5 shrink-0" />
+        <div><p className="text-xs font-semibold text-on-surface">{t('03 · Create and assign your own voice', '03 · 克隆并设置你自己的声音')}</p>
+        <p className="text-[10px] leading-relaxed text-on-surface-variant mt-1">{t('Use only your own voice. A clear 10–30 second sample works best. Your sample is sent to ElevenLabs to create the clone; its provider voice ID is saved to your account.', '只能使用你本人的声音。建议录制清晰的 10–30 秒样本；样本会发送至 ElevenLabs 创建克隆，服务商声音 ID 会保存到你的账号。')}</p></div>
+      </div>
+      {!profile ? <>
+        <label className="block text-xs text-on-surface-variant"><span className="block mb-1.5">{t('Voice name', '声音名称')}</span><input value={cloneName} maxLength={80} disabled={profileBusy} onChange={e => setCloneName(e.target.value)} className="w-full rounded-xl border border-primary/15 bg-white/75 px-3 py-2 text-on-surface" /></label>
+        <label className="flex items-start gap-2 text-[11px] leading-relaxed text-on-surface-variant"><input type="checkbox" checked={cloneConsent} disabled={profileBusy} onChange={e => setCloneConsent(e.target.checked)} className="mt-0.5" /><span>{t('I confirm this recording is my own voice and I consent to using it to create a private AI voice clone. I will not clone another person without permission.', '我确认录音是我本人的声音，并同意用它创建私有 AI 声音克隆；我不会在未经允许的情况下克隆他人的声音。')}</span></label>
+        <button type="button" disabled={!recording.recordingId || !cloneConsent || profileBusy || active} onClick={() => void createClone()} className={`${button} bg-primary text-on-primary`}>
+          {profileBusy ? <LoaderCircle size={15} className="animate-spin" /> : <Sparkles size={15} />}{profileBusy ? t('Creating voice…', '正在创建声音…') : t('Clone this recording', '克隆这段录音')}
+        </button>
+        {!recording.recordingId && <p className="text-[10px] text-amber-800">{t('Record and transcribe a sample above first.', '请先在上方录制并完成识别。')}</p>}
+      </> : <>
+        <p className="text-xs text-primary font-semibold"><Check size={14} className="inline mr-1" />{t(`Voice ready: ${profile.display_name}`, `声音已就绪：${profile.display_name}`)}</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="text-xs text-on-surface-variant"><span className="block mb-1.5">{t('AI Companion replies', 'AI 陪伴回复声音')}</span><select value={aiVoice} disabled={profileBusy} onChange={e => setAiVoice(e.target.value as VoiceChoice)} className="w-full rounded-xl border border-primary/15 bg-white px-3 py-2 text-on-surface"><option value="clone">{t('My cloned voice', '我的克隆声音')}</option><option value="ana">{t('Doll voice · English', '玩偶同款 · 英文')}</option><option value="xiaoxiao">{t('Gentle voice · Chinese', '温柔女声 · 中文')}</option><option value="off">{t('Off', '关闭')}</option></select></label>
+          <label className="text-xs text-on-surface-variant"><span className="block mb-1.5">{t('Companion interactions', '伙伴互动声音')}</span><select value={interactionVoice} disabled={profileBusy} onChange={e => setInteractionVoice(e.target.value as VoiceChoice)} className="w-full rounded-xl border border-primary/15 bg-white px-3 py-2 text-on-surface"><option value="clone">{t('My cloned voice', '我的克隆声音')}</option><option value="ana">{t('Doll voice · English', '玩偶同款 · 英文')}</option><option value="xiaoxiao">{t('Gentle voice · Chinese', '温柔女声 · 中文')}</option><option value="off">{t('Off', '关闭')}</option></select></label>
+        </div>
+        <div className="flex flex-wrap gap-2"><button type="button" disabled={profileBusy} onClick={() => void savePreferences()} className={`${button} bg-primary text-on-primary`}>{profileBusy ? <LoaderCircle size={15} className="animate-spin" /> : <Check size={15} />}{t('Save voice settings', '保存声音设置')}</button><button type="button" disabled={profileBusy} onClick={() => void removeClone()} className={`${button} text-red-700 hover:bg-red-50`}><Trash2 size={14} />{t('Delete cloned voice', '删除克隆声音')}</button></div>
+      </>}
     </div>
 
     {error && <p className="text-xs text-red-700 leading-relaxed" role="alert">{error}</p>}

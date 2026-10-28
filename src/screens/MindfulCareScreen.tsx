@@ -12,6 +12,7 @@ import { CARE_REWARDS, CareError, createCareInvite, growthProgress, growthStage,
 import { login, logUsage } from '../services/backendService';
 import { getCurrentUserId, setCurrentUserId } from '../services/session';
 import { tr, type AppLanguage } from '../i18n';
+import { playConfiguredVoice } from '../services/voiceStudio';
 import './mindfulCare.css';
 
 const actions: { key: CareAction; icon: string; en: string; zh: string }[] = [
@@ -96,7 +97,9 @@ export default function MindfulCareScreen({ onBack, language }: { onBack: () => 
       const next = await care.action(target, action, food);
       setReaction(action); setCooldown(true);
       const responses: Record<CareAction, [string, string]> = { feed: ['Energy replenished. Thanks for the care.', '能量已补充，谢谢你的照顾。'], pet: ['Your gentle touch makes this home feel warm.', '轻轻摸摸，空间也变得暖暖的。'], wash: ['Clean and refreshed.', '清洁完成，状态焕新。'], play: ['A good moment to unwind together.', '一起活动一下，放松片刻。'], rest: ['Resting and restoring energy.', '休息片刻，恢复精力。'], breathe: ['We found a calmer rhythm together.', '我们一起找到了更平静的节奏。'] };
-      setNotice(`${tr(language, ...responses[action])} +${CARE_REWARDS[action]} XP`);
+      const spokenResponse = tr(language, ...responses[action]);
+      setNotice(`${spokenResponse} +${CARE_REWARDS[action]} XP`);
+      void playConfiguredVoice(spokenResponse, 'interaction').catch(() => undefined);
       if (growthStage(next.xp) > growthStage(target.xp)) { setLeveledUp(true); schedule(() => setLeveledUp(false), 4500); }
       schedule(() => setReaction(null), 1800); schedule(() => setCooldown(false), 5200);
       if (target.id.startsWith('local-')) void logUsage({ user_id: userId, action_type: `mindful_${action === 'feed' ? 'feeding_time' : action === 'pet' ? 'gentle_stroke' : action === 'breathe' ? 'deep_breathing' : action}`, action_detail: { score_gain: CARE_REWARDS[action], kind: target.kind, local_care: true, ...(action === 'breathe' ? { completed_cycles: 3 } : {}) } }).catch(() => undefined);

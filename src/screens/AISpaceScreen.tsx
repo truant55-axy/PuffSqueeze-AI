@@ -8,6 +8,7 @@ import { getCurrentUserId } from '../services/session';
 import ProfileAvatarMenu from '../components/ProfileAvatarMenu';
 import { AppLanguage, tr } from '../i18n';
 import { saveAccountItem, reportStorageError } from '../services/accountSync';
+import { playConfiguredVoice, VoiceServiceError } from '../services/voiceStudio';
 
 export default function AISpaceScreen({ language }: { language: AppLanguage }) {
   const userId = getCurrentUserId();
@@ -43,6 +44,9 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
     weeklyAverage: 0,
   });
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [speakingId, setSpeakingId] = useState('');
+  const [voiceNotice, setVoiceNotice] = useState('');
+  const voicePlayer = useRef<HTMLAudioElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -110,6 +114,20 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
 
   const removeAttachment = (id: string) => {
     setAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
+  };
+
+  const speakMessage = async (message: Message) => {
+    voicePlayer.current?.pause(); setSpeakingId(message.id); setVoiceNotice('');
+    try {
+      const player = await playConfiguredVoice(message.content, 'ai');
+      voicePlayer.current = player;
+      if (player) player.onended = () => setSpeakingId('');
+    } catch (error) {
+      setSpeakingId('');
+      setVoiceNotice(error instanceof VoiceServiceError && error.code === 'voice_disabled'
+        ? tr(language, 'AI reply voice is off. Change it in AI voice studio.', 'AI 回复声音已关闭，请在 AI 声音工坊中修改。')
+        : tr(language, 'Voice playback is temporarily unavailable.', '语音播放暂时不可用。'));
+    }
   };
 
   const handleSend = async () => {
@@ -260,6 +278,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
                     </div>
                   )}
                 </div>
+                {msg.role === 'assistant' && <button type="button" disabled={speakingId === msg.id} onClick={() => void speakMessage(msg)} className="ml-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold text-primary bg-white/55 hover:bg-white/80 disabled:opacity-50" aria-label={tr(language, 'Read this reply aloud', '朗读这条回复')}><AppIcon className="app-icon text-sm">{speakingId === msg.id ? 'graphic_eq' : 'volume_up'}</AppIcon>{speakingId === msg.id ? tr(language, 'Speaking…', '正在播放…') : tr(language, 'Listen', '听一听')}</button>}
               </motion.div>
             ))}
             {isLoading && (
@@ -270,6 +289,7 @@ export default function AISpaceScreen({ language }: { language: AppLanguage }) {
               </motion.div>
             )}
           </AnimatePresence>
+          {voiceNotice && <p className="text-xs text-amber-800 px-4" role="status">{voiceNotice}</p>}
         </div>
 
         <div className="shrink-0 pt-4 pb-32">

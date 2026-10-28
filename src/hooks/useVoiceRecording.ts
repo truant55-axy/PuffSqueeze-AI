@@ -8,6 +8,7 @@ export function useVoiceRecording() {
   const [seconds, setSeconds] = useState(0);
   const [transcript, setTranscript] = useState('');
   const [originalUrl, setOriginalUrl] = useState('');
+  const [recordingId, setRecordingId] = useState(0);
   const [notice, setNotice] = useState('');
   const phaseRef = useRef<RecordingPhase>('idle');
   const streamRef = useRef<MediaStream | null>(null);
@@ -55,10 +56,10 @@ export function useVoiceRecording() {
         const controller = new AbortController(); requestRef.current = controller;
         const deadline = setTimeout(() => controller.abort(), 45000);
         try {
-          const words = await transcribeRecording(audio, lang, controller.signal);
+          const result = await transcribeRecording(audio, lang, controller.signal);
           if (epoch !== epochRef.current) return;
-          setTranscript(words);
-          if (!words.trim()) setNotice('no_transcript');
+          setTranscript(result.text); setRecordingId(result.recordingId);
+          if (!result.text.trim()) setNotice('no_transcript');
         } catch {
           if (epoch === epochRef.current) setNotice('transcription_unavailable');
         } finally {
@@ -71,7 +72,7 @@ export function useVoiceRecording() {
         epochRef.current++; clearInterval(intervalRef.current); releaseMicrophone();
         setNotice('recording_failed'); changePhase('idle');
       };
-      setTranscript(''); setSeconds(0);
+      setTranscript(''); setRecordingId(0); setSeconds(0);
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
       urlRef.current = ''; setOriginalUrl('');
       recorder.start(); changePhase('recording');
@@ -93,7 +94,7 @@ export function useVoiceRecording() {
     if (phaseRef.current !== 'idle') return;
     epochRef.current++;
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    urlRef.current = ''; setOriginalUrl(''); setTranscript(''); setSeconds(0); setNotice('');
+    urlRef.current = ''; setOriginalUrl(''); setTranscript(''); setRecordingId(0); setSeconds(0); setNotice('');
   };
 
   useEffect(() => () => {
@@ -106,5 +107,5 @@ export function useVoiceRecording() {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
   }, []);
 
-  return { phase, seconds, transcript, setTranscript, originalUrl, notice, start, finish, clear };
+  return { phase, seconds, transcript, setTranscript, originalUrl, recordingId, notice, start, finish, clear };
 }

@@ -55,11 +55,14 @@ MOODLE_TABLE_PREFIX=
 ALLOWED_ORIGIN=https://puff-squeeze-ai.vercel.app
 GEMINI_API_KEY=<Gemini key>
 GEMINI_TRANSCRIBE_MODEL=gemini-flash-latest
+ELEVENLABS_API_KEY=<ElevenLabs key; required for personal voice cloning>
+ELEVENLABS_TTS_MODEL=eleven_flash_v2_5
 ```
 
 The container runs additive schema preparation before starting the HTTP server.
-It creates `puffsqueeze_voice_recordings` when missing so recognized audio and
-its transcript can be stored under the authenticated user. It does not drop
+It creates `puffsqueeze_voice_recordings` and `puffsqueeze_voice_profiles` when
+missing so recognized audio, clone consent and separate AI/interaction voice
+choices can be stored under the authenticated user. It does not drop
 tables or import the private transfer snapshot. Back up TiDB before the first
 deployment and review schema changes before applying them.
 
@@ -68,9 +71,9 @@ deployment and review schema changes before applying them.
 The ordinary web, account, AI, care and synchronization APIs run in the PHP
 container. Short browser recordings are transcribed through Gemini using the
 same server-side `GEMINI_API_KEY`; successful recordings and transcripts are
-stored in TiDB. Neural speech synthesis still requires a separate Python runtime, so
-without `VOICE_PYTHON` that endpoint safely reports that synthesis is
-unavailable. The local M5 bridge is not started on Vercel or Render. Browser
+stored in TiDB. The Docker image includes the small Python worker used by the two
+preset voices. Personal voice cloning and cloned speech use ElevenLabs only when
+`ELEVENLABS_API_KEY` is configured. The local M5 bridge is not started on Vercel or Render. Browser
 Bluetooth/USB features remain client-side.
 
 ## Verification
