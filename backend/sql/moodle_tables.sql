@@ -15,6 +15,22 @@ CREATE TABLE IF NOT EXISTS `puffsqueeze_users` (
   KEY `idx_moodle_user_id` (`moodle_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `puffsqueeze_voice_recordings` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `transcript` TEXT NOT NULL,
+  `language` ENUM('en','zh') NOT NULL,
+  `mime_type` VARCHAR(32) NOT NULL,
+  `audio_bytes` INT UNSIGNED NOT NULL,
+  `audio_sha256` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `audio_data` MEDIUMBLOB NOT NULL,
+  `created_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_voice_user_hash` (`user_id`, `audio_sha256`),
+  KEY `idx_voice_user_created` (`user_id`, `created_at`),
+  CONSTRAINT `fk_ps_voice_user` FOREIGN KEY (`user_id`) REFERENCES `puffsqueeze_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `puffsqueeze_device_events` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,

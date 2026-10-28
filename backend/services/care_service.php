@@ -114,13 +114,9 @@ function carePetData(PDO $pdo, array $pet): array
     $events = tableName('puffsqueeze_pet_events');
     $stmt = $pdo->prepare("SELECT u.id, u.display_name FROM {$members} m JOIN {$users} u ON u.id=m.user_id WHERE m.pet_id=? ORDER BY m.joined_at, u.id");
     $stmt->execute([$pet['id']]);
-    $people = array_map(function ($m) {
-        return ['id' => (int)$m['id'], 'name' => $m['display_name']];
-    }, $stmt->fetchAll());
+    $people = array_map(fn($m) => ['id' => (int)$m['id'], 'name' => $m['display_name']], $stmt->fetchAll());
     $stmt = $pdo->prepare("SELECT e.id, e.user_id, e.action, e.food, e.xp_gain, e.created_at, u.display_name FROM {$events} e JOIN {$users} u ON u.id=e.user_id WHERE e.pet_id=? ORDER BY e.id DESC LIMIT 20");
     $stmt->execute([$pet['id']]);
-    $history = array_map(function ($e) {
-        return ['id' => (string)$e['id'], 'user_id' => (int)$e['user_id'], 'name' => $e['display_name'], 'action' => $e['action'], 'food' => $e['food'], 'xp_gain' => (int)$e['xp_gain'], 'created_at' => str_replace(' ', 'T', $e['created_at']) . 'Z'];
-    }, $stmt->fetchAll());
+    $history = array_map(fn($e) => ['id' => (string)$e['id'], 'user_id' => (int)$e['user_id'], 'name' => $e['display_name'], 'action' => $e['action'], 'food' => $e['food'], 'xp_gain' => (int)$e['xp_gain'], 'created_at' => str_replace(' ', 'T', $e['created_at']) . 'Z'], $stmt->fetchAll());
     return ['id' => (string)$pet['id'], 'owner_id' => (int)$pet['owner_id'], 'kind' => $pet['kind'], 'name' => $pet['name'], 'xp' => (int)$pet['xp'], 'happiness' => $pet['happiness'], 'fullness' => $pet['fullness'], 'cleanliness' => $pet['cleanliness'], 'energy' => $pet['energy'], 'members' => $people, 'events' => $history, 'updated_at' => str_replace(' ', 'T', $pet['updated_at']) . 'Z'];
 }

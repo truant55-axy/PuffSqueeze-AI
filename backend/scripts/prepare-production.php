@@ -5,7 +5,7 @@ require_once __DIR__ . '/../services/auth_service.php';
 try {
     if (envValue('APP_ENV') === 'production') {
         $password = (string)envValue('DB_PASSWORD', envValue('DB_PASS', ''));
-        if ($password === '' || strpos($password, 'CHANGE_') === 0) throw new RuntimeException('Set a unique database password before starting production');
+        if ($password === '' || str_starts_with($password, 'CHANGE_')) throw new RuntimeException('Set a unique database password before starting production');
     }
     $pdo = db();
     $prefix = (string)envValue('MOODLE_TABLE_PREFIX', '');

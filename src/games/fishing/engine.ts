@@ -180,7 +180,7 @@ export class FishingEngine {
     this.sparks = this.sparks.map(spark => ({ ...spark, x: spark.x + spark.vx * dt, y: spark.y + spark.vy * dt, vy: spark.vy + 14 * dt, age: spark.age + dt })).filter(spark => spark.age < 1.1);
     if (this.phase === 'lowering') {
       this.depth = Math.min(1, this.depth + dt * settings.lowerSpeed * (.75 + this.pressure * .45));
-      if (this.depth >= 1) { this.phase = 'reeling'; this.needsRelease = this.pressure > 0; this.publish(); }
+      // Stay at full depth while held. Only an actual release starts reeling.
     } else if (this.phase === 'reeling') {
       const previousY = this.hookY();
       this.depth = Math.max(0, this.depth - dt * settings.reelSpeed * (this.hooked ? .8 : 1));

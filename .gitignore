@@ -1,4 +1,8 @@
 node_modules/
+.vercel/
+.voice-venv/
+.voice-models/
+__pycache__/
 build/
 dist/
 coverage/
@@ -14,3 +18,14 @@ deploy/artifacts/
 **/.dev.vars*
 deploy/wireless/.tools/
 *.sql.gz
+*.dump
+*.bak
+*.zip
+
+# Files from the Windows transfer bundle must never enter the cloud repository.
+/database/
+/private/
+/runtime/
+/logs/
+/data/
+/settings.json

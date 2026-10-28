@@ -1,5 +1,8 @@
 // PuffSqueeze's two-direction adaptation. Completed runs are reported to its parent page.
 var flightInput = { left: false, right: false };
+var flightDirectInput = { left: false, right: false };
+var flightGripInput = { left: false, right: false };
+var flightGripNeedsNeutral = true;
 var flightHeight = 100;
 var flightChord = false;
 var flightLanguage = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'zh';
@@ -7,23 +10,23 @@ var flightOverlay = 'ready';
 var flightCopy = {
   zh: {
     tagline:'把节奏，交给海风。', distance:'航程', level:'旅程', collected:'收集', energy:'飞行能量',
-    pause:'暂停', resume:'继续', rise:'上升', descend:'下降', hold:'按住移动 · 松开悬停',
+    pause:'暂停', resume:'继续', rise:'上升', descend:'下降', hold:'短按一次移动一段 · 长按不连发',
     both:'双键一起按暂停 · 松开后按任一键继续',
     ready:['沿着海风，轻轻出发','小飞机会自动前行。收集青绿色能量，轻轻避开珊瑚红障碍。','开始飞行','按任一方向键开始，无需空格键。'],
     paused:['在这里，歇一小会儿','海风会等你，旅程已暂停。','继续飞行','松开双键，再按任一方向键继续。'],
     finished:['这一程，辛苦啦','已飞行 {distance} 米，收集了 {collected} 份能量。准备好了，就再出发。','重新出发','按任一方向键重新出发。'],
     error:['暂时无法开启飞行','此游戏需要浏览器支持 WebGL。请开启浏览器图形加速后刷新页面。','暂不可用','可以使用左上角返回游戏页。'],
-    world:'海面、云朵与小飞机', progress:'飞行进度', riseLabel:'按住左方向键，上升', descendLabel:'按住右方向键，下降'
+    world:'海面、云朵与小飞机', progress:'飞行进度', riseLabel:'短按上方向键，上升一段', descendLabel:'短按下方向键，下降一段'
   },
   en: {
     tagline:'Let the sea breeze set the pace.', distance:'Distance', level:'Journey', collected:'Collected', energy:'Flight energy',
-    pause:'Pause', resume:'Resume', rise:'Rise', descend:'Descend', hold:'Hold to move · Release to hover',
+    pause:'Pause', resume:'Resume', rise:'Rise', descend:'Descend', hold:'Tap once to move one step · Hold does not repeat',
     both:'Press both to pause · Release, then press either to resume',
     ready:['A little flight, a little calm','Fly forward automatically. Collect teal energy and gently steer clear of coral obstacles.','Begin flight','Press either arrow to begin. No space bar needed.'],
     paused:['Take a little breather','Your journey is paused. The sea breeze can wait.','Continue flight','Release both arrows, then press either one to continue.'],
     finished:['A lovely little journey','You flew {distance} m and collected {collected} energy drops. Set off again whenever you feel ready.','Fly again','Press either arrow to set off again.'],
     error:['Flight is unavailable','This game needs WebGL. Enable browser graphics acceleration, then refresh the page.','Unavailable','Use the top-left arrow to return to games.'],
-    world:'Sea, clouds and a little airplane', progress:'Flight progress', riseLabel:'Hold left arrow to rise', descendLabel:'Hold right arrow to descend'
+    world:'Sea, clouds and a little airplane', progress:'Flight progress', riseLabel:'Tap up arrow to rise one step', descendLabel:'Tap down arrow to descend one step'
   }
 };
 
@@ -104,7 +107,7 @@ function updateInputDisplay(){
   document.getElementById('descendButton').setAttribute('aria-pressed',String(flightInput.right));
 }
 
-function handleFlightInput(key,down,repeat){
+function applyFlightInput(key,down,repeat){
   if(!game||flightOverlay==='error') return;
   var name=key==='ArrowLeft'?'left':key==='ArrowRight'?'right':null;
   if(!name) return;
@@ -117,13 +120,61 @@ function handleFlightInput(key,down,repeat){
       pauseFlight();
       // Keep the chord latched until keyup arrives, so holding cannot resume.
       flightInput.left=flightInput.right=true;
-    }else if(!flightChord){ beginFlight(); }
+    }else if(!flightChord){
+      beginFlight();
+      if(game.status==='playing'){
+        // Only a fresh press changes the target; held frames and key repeats do not.
+        flightHeight=Math.max(game.planeDefaultHeight-game.planeAmpHeight,
+          Math.min(game.planeDefaultHeight+game.planeAmpHeight,
+            flightHeight+(name==='left'?1:-1)*game.planeTapHeight));
+      }
+    }
   }
   updateInputDisplay();
 }
 
+function updateFlightSources(repeat){
+  var next={left:flightDirectInput.left||flightGripInput.left,right:flightDirectInput.right||flightGripInput.right};
+  if(next.left&&next.right&&!flightChord){
+    // A simultaneous two-control frame pauses without first adding an up step.
+    flightChord=true;
+    pauseFlight();
+    flightInput.left=flightInput.right=true;
+    updateInputDisplay();
+    return;
+  }
+  // Apply releases before presses: swapping hands cannot form a false pause chord.
+  ['left','right'].forEach(function(side){
+    if(flightInput[side]&&!next[side]) applyFlightInput(side==='left'?'ArrowLeft':'ArrowRight',false,false);
+  });
+  ['left','right'].forEach(function(side){
+    if(next[side]&&!flightInput[side]) applyFlightInput(side==='left'?'ArrowLeft':'ArrowRight',true,repeat);
+  });
+}
+
+function handleFlightInput(key,down,repeat){
+  var side=key==='ArrowLeft'||key==='ArrowUp'?'left':key==='ArrowRight'||key==='ArrowDown'?'right':null;
+  if(!side) return;
+  flightDirectInput[side]=down;
+  updateFlightSources(repeat);
+}
+
+function handleFlightGrip(left,right){
+  if(![left,right].every(function(value){return typeof value==='number'&&isFinite(value)&&value>=0&&value<=1;})) return;
+  if(flightGripNeedsNeutral){
+    if(left!==0||right!==0) return;
+    flightGripNeedsNeutral=false;
+  }
+  flightGripInput.left=left>=.18;
+  flightGripInput.right=right>=.18;
+  updateFlightSources(false);
+}
+
 function releaseFlightInput(){
   flightInput.left=flightInput.right=false;
+  flightDirectInput.left=flightDirectInput.right=false;
+  flightGripInput.left=flightGripInput.right=false;
+  flightGripNeedsNeutral=true;
   flightChord=false;
   updateInputDisplay();
 }
@@ -132,7 +183,7 @@ function initFlightControls(){
   setFlightLanguage(flightLanguage);
   ['keydown','keyup'].forEach(function(type){
     window.addEventListener(type,function(event){
-      if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight') return;
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].indexOf(event.key)===-1) return;
       if(event.altKey||event.ctrlKey||event.metaKey) return;
       event.preventDefault();
       handleFlightInput(event.key,type==='keydown',event.repeat);
@@ -142,6 +193,8 @@ function initFlightControls(){
     if(event.source!==window.parent||event.origin!==location.origin||!event.data) return;
     if(event.data.type==='puffsqueeze:aviator-input'&&typeof event.data.down==='boolean'){
       handleFlightInput(event.data.key,event.data.down,Boolean(event.data.repeat));
+    }else if(event.data.type==='puffsqueeze:aviator-grip'){
+      handleFlightGrip(event.data.left,event.data.right);
     }else if(event.data.type==='puffsqueeze:aviator-language'){
       setFlightLanguage(event.data.language);
     }else if(event.data.type==='puffsqueeze:aviator-suspend'){

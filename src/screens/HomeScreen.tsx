@@ -1,5 +1,6 @@
 import AppIcon from '../components/AppIcon';
 import PasswordSettings from '../components/PasswordSettings';
+import VoiceStudio from '../components/VoiceStudio';
 import { motion, useAnimation } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Screen } from '../types';
@@ -424,6 +425,8 @@ export default function HomeScreen({ onNavigate, onLogout, language }: HomeScree
           </div>
           <div className="relative z-10 mt-4 w-full max-w-sm"><CompanionMoodPicker kind={companion} language={language} /></div>
         </motion.section>
+
+        <VoiceStudio language={language} />
 
         {/* Action List */}
         <motion.div 

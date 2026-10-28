@@ -7,6 +7,7 @@ const prefixes: Record<string, string> = {
   daily_plans: 'puffsqueeze_daily_plans_', poetry_cards: 'puffsqueeze_poetry_cards_',
   fishing_collection: 'puffsqueeze_fishing_collection_v1_', care_local: 'puffsqueeze_care_local_v1_',
   ai_messages: 'puffsqueeze_ai_messages_', care_visuals: 'puffsqueeze_care_visuals_',
+  voice_studio: 'puffsqueeze_voice_studio_',
 };
 export const ACCOUNT_SYNC_EVENT = 'puffsqueeze:account-sync';
 type QueuedRecord = { id: string; userId: number; type: 'document' | 'activity'; key: string; value: unknown; time: string; seedOnly?: boolean };

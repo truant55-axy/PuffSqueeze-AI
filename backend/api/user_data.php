@@ -30,7 +30,7 @@ try {
     if (!is_array($batch) || count($batch) < 1 || count($batch) > 20) {
         jsonResponse(['success' => false, 'message' => 'Send 1 to 20 records'], 422);
     }
-    $allowed = ['companion', 'companion_moods', 'daily_plans', 'poetry_cards', 'fishing_collection', 'care_local', 'ai_messages', 'care_visuals'];
+    $allowed = ['companion', 'companion_moods', 'daily_plans', 'poetry_cards', 'fishing_collection', 'care_local', 'ai_messages', 'care_visuals', 'voice_studio'];
     $validated = [];
     foreach ($batch as $item) {
         if (!is_array($item)) jsonResponse(['success' => false, 'message' => 'Invalid record'], 422);

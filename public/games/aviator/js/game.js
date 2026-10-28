@@ -47,7 +47,7 @@ function resetGame(){
           planeAmpHeight:65,
           planeAmpWidth:75,
           planeMoveSensivity:0.005,
-          planeClimbSpeed:.12,
+          planeTapHeight:20,
           planeRotXSensivity:0.0008,
           planeRotZSensivity:0.0004,
           planeFallSpeed:.001,
@@ -925,10 +925,8 @@ function removeEnergy(){
 
 
 function updatePlane(){
-  // The two physical directions intentionally map to altitude, not horizontal movement.
-  var direction=(flightInput.left?1:0)-(flightInput.right?1:0);
-  flightHeight=Math.max(game.planeDefaultHeight-game.planeAmpHeight,
-    Math.min(game.planeDefaultHeight+game.planeAmpHeight,flightHeight+direction*deltaTime*game.planeClimbSpeed));
+  // Press edges set a fixed altitude step in controls.js; holding cannot add movement.
+  var direction=Math.max(-1,Math.min(1,(flightHeight-airplane.mesh.position.y)/game.planeTapHeight));
   game.planeSpeed=1.35;
   airplane.mesh.position.y+=(flightHeight-airplane.mesh.position.y)*(1-Math.exp(-deltaTime*.014));
   airplane.mesh.position.x=-55;

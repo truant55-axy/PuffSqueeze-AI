@@ -4,6 +4,7 @@ import ProfileAvatarMenu from '../components/ProfileAvatarMenu';
 import { getCurrentUserId } from '../services/session';
 import { Screen } from '../types';
 import { AppLanguage, tr } from '../i18n';
+import GameControllerPanel from '../components/GameControllerPanel';
 
 export default function GameScreen({ onNavigate, language }: { onNavigate: (screen: Screen) => void; language: AppLanguage }) {
   const userId = getCurrentUserId();
@@ -20,10 +21,12 @@ export default function GameScreen({ onNavigate, language }: { onNavigate: (scre
       </header>
 
       <main className="flex-grow flex flex-col overflow-hidden px-6 md:px-8 max-w-7xl mx-auto w-full pt-6 pb-6">
-        <section className="mb-8 shrink-0">
+        <section className="mb-5 shrink-0">
           <h2 className="text-3xl sm:text-4xl font-serif text-on-surface tracking-tight">{tr(language, 'Little moments of calm', '给心情一点轻松时光')}</h2>
           <p className="mt-2 text-sm text-on-surface-variant">{tr(language, 'Choose something gentle to do, at your own pace.', '挑一个轻松的小活动，按自己的节奏开始。')}</p>
         </section>
+
+        <GameControllerPanel language={language} />
 
         <section className="flex-1 overflow-y-auto pb-20 flex items-start">
           <div className="grid w-full grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 items-center">
@@ -58,7 +61,7 @@ export default function GameScreen({ onNavigate, language }: { onNavigate: (scre
             <div className="relative text-center px-2">
               <p className="font-bold text-on-surface text-sm">The Aviator</p>
               <p className="text-xs text-primary/80 mt-1">{tr(language, 'A flight over the sea', '海上飞行')}</p>
-              <span className="block mt-2 text-[11px] font-medium text-primary/70">{tr(language, '← Rise · → Descend', '← 上升 · → 下降')}</span>
+              <span className="block mt-2 text-[11px] font-medium text-primary/70">{tr(language, 'Tap ↑ to rise · Tap ↓ to descend', '短按 ↑ 上升 · 短按 ↓ 下降')}</span>
             </div>
           </motion.button>
 

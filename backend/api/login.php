@@ -31,7 +31,7 @@ try {
         jsonResponse(['success' => false, 'message' => 'Invalid credentials'], 401);
     }
     $hash = (string)$user['password_hash'];
-    if (!$hash || strpos($hash, 'ps1:') !== 0 || password_needs_rehash(substr($hash, 4), PASSWORD_DEFAULT) || $user['plain_password'] !== '') {
+    if (!$hash || !str_starts_with($hash, 'ps1:') || password_needs_rehash(substr($hash, 4), PASSWORD_DEFAULT) || $user['plain_password'] !== '') {
         $save = $pdo->prepare("UPDATE {$table} SET password_hash=?,plain_password='' WHERE id=?");
         $save->execute([appPasswordHash($password), $user['id']]);
     }

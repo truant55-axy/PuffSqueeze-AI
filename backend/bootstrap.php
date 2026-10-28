@@ -67,6 +67,8 @@ function applyCors(): void
     $allowed = array_filter(array_map(static function (string $value): string {
         return rtrim(trim($value, " \t\n\r\0\x0B\"'"), '/');
     }, explode(',', (string)envValue('ALLOWED_ORIGIN', ''))));
+    // The production domain is public configuration, not a secret. Keeping it as
+    // a fallback prevents an accidentally quoted Render variable from breaking CORS.
     $allowed[] = 'https://puff-squeeze-ai.vercel.app';
     if ($origin !== '' && in_array($origin, array_unique($allowed), true)) {
         header('Access-Control-Allow-Origin: ' . $origin);

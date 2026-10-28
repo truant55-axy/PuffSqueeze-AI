@@ -2,10 +2,21 @@ import AppIcon from '../components/AppIcon';
 import { useEffect, useRef } from 'react';
 import { AppLanguage, tr } from '../i18n';
 import { recordActivity } from '../services/accountSync';
+import { useGameController } from '../services/gameController';
 
 export default function AviatorScreen({ onBack, language }: { onBack: () => void; language: AppLanguage }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const initialLanguage = useRef(language);
+  const { subscribe } = useGameController();
+
+  useEffect(() => subscribe({
+    onFrame: value => frame.current?.contentWindow?.postMessage({
+      type: 'puffsqueeze:aviator-grip', left: value.left, right: value.right,
+    }, window.location.origin),
+    onStatus: status => {
+      if (status !== 'live') frame.current?.contentWindow?.postMessage({ type: 'puffsqueeze:aviator-suspend' }, window.location.origin);
+    },
+  }), [subscribe]);
 
   useEffect(() => {
     const result = (event: MessageEvent) => {
@@ -15,7 +26,7 @@ export default function AviatorScreen({ onBack, language }: { onBack: () => void
     };
     window.addEventListener('message', result);
     const forward = (event: KeyboardEvent) => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
       if (event.defaultPrevented) return;
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target as HTMLElement | null;
@@ -57,12 +68,12 @@ export default function AviatorScreen({ onBack, language }: { onBack: () => void
         </button>
         <div className="min-w-0">
           <h1 className="font-semibold text-primary text-sm sm:text-base truncate">The Aviator · {tr(language, 'Sea flight', '海上飞行')}</h1>
-          <p className="text-[11px] text-on-surface-variant">{tr(language, 'Solo · ← Rise · → Descend', '单人 · ← 上升 · → 下降')}</p>
+          <p className="text-[11px] text-on-surface-variant">{tr(language, 'Solo · Tap ↑ to rise · Tap ↓ to descend', '单人 · 短按 ↑ 上升 · 短按 ↓ 下降')}</p>
         </div>
       </header>
       <main className="flex-1 min-h-0">
         <iframe ref={frame} title={tr(language, 'The Aviator sea flight game', 'The Aviator 海上飞行游戏')}
-          src={`/games/aviator/index.html?lang=${initialLanguage.current}`}
+          src={`/games/aviator/index.html?lang=${initialLanguage.current}&controls=20261018-usb-2`}
           onLoad={() => frame.current?.contentWindow?.postMessage({ type: 'puffsqueeze:aviator-language', language }, window.location.origin)}
           className="w-full h-full block border-0" allow="fullscreen" />
       </main>

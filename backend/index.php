@@ -13,6 +13,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 
 $routes = [
+    '/api/voice/transcribe' => __DIR__ . '/api/voice_transcribe.php',
+    '/api/voice/synthesize' => __DIR__ . '/api/voice_synthesize.php',
     '/api/password/change' => __DIR__ . '/api/password_change.php',
     '/api/logout' => __DIR__ . '/api/logout.php',
     '/api/user-data' => __DIR__ . '/api/user_data.php',

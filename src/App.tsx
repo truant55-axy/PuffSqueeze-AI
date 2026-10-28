@@ -20,6 +20,7 @@ import { startAccountSync, recordActivity } from './services/accountSync';
 import { Screen } from './types';
 import { clearCurrentUserId, hasCurrentUserId, getCurrentUserId } from './services/session';
 import { AppLanguage } from './i18n';
+import { GameControllerProvider } from './services/gameController';
 
 const SCREEN_KEY = 'puffsqueeze_current_screen';
 const LANG_KEY = 'puffsqueeze_language';
@@ -118,6 +119,7 @@ export default function App() {
   if (userId > 0 && readyUser !== userId) return <div className="min-h-screen grid place-items-center bg-background text-primary text-sm" role="status">{language === 'zh' ? '正在读取你的记录……' : 'Loading your saved records…'}</div>;
 
   return (
+    <GameControllerProvider key={userId} userId={userId}>
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
       {/* Global Background Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none atmosphere-bg" />
@@ -168,5 +170,6 @@ export default function App() {
         />
       )}
     </div>
+    </GameControllerProvider>
   );
 }

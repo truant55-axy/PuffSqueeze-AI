@@ -5,7 +5,7 @@ import HealingAnimal from '../components/HealingAnimal';
 import { useCompanion } from '../hooks/useCompanion';
 import { COMPANION_CHOICES } from '../services/companionService';
 import { getCurrentUserId } from '../services/session';
-import { GripSerialConnection, supportsGripSerial, type GripStatus } from '../services/gripSerial';
+import { useGameController } from '../services/gameController';
 import { FISH_CATALOG, FISH_TRAITS, FISHING_STORAGE_EVENT, readFishCollection, keepFish, type FishSpecies, type FishingDifficulty } from '../games/fishing/catalog';
 import { FishingEngine, type FishingSnapshot } from '../games/fishing/engine';
 import { FISH_ARTWORK, fishInk } from '../games/fishing/fishArtwork';
@@ -61,10 +61,7 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
   const [saveError, setSaveError] = useState(false);
   const [canvasError, setCanvasError] = useState(false);
   const [selectedFish, setSelectedFish] = useState<FishSpecies | null>(null);
-  const serial = useRef<GripSerialConnection | null>(null);
-  const [serialStatus, setSerialStatus] = useState<GripStatus | 'off'>('off');
-  const [connecting, setConnecting] = useState(false);
-  const [serialError, setSerialError] = useState(false);
+  const { status: controllerStatus, subscribe } = useGameController();
   const serialLatch = useRef({ left: false, right: false });
   const needsNeutral = useRef(false);
   const alive = useRef(true);
@@ -145,7 +142,6 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
     window.addEventListener(FISHING_STORAGE_EVENT, refresh); window.addEventListener('storage', onStorage);
     return () => {
       alive.current = false; engine.current?.dispose(); engine.current = null;
-      void serial.current?.close(); serial.current = null;
       void sound.current?.close(); sound.current = null;
       sources.current.clear();
       if (noticeTimer.current) clearTimeout(noticeTimer.current);
@@ -154,6 +150,31 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
       window.removeEventListener(FISHING_STORAGE_EVENT, refresh); window.removeEventListener('storage', onStorage);
     };
   }, [userId]);
+  useEffect(() => {
+    let wasConnected = false;
+    needsNeutral.current = true;
+    return subscribe({
+      onFrame: value => {
+        if (!alive.current) return;
+        if (needsNeutral.current) {
+          if (value.left <= .1 && value.right <= .1) needsNeutral.current = false;
+          else return;
+        }
+        if (snapshotRef.current.paused) return;
+        for (const side of ['left', 'right'] as const) {
+          const held = serialLatch.current[side] ? value[side] > .1 : value[side] >= .18;
+          serialLatch.current[side] = held;
+          if (held) sources.current.set(`controller:${side}`, { side, level: value[side] });
+          else sources.current.delete(`controller:${side}`);
+        }
+        updateGripState();
+      },
+      onStatus: status => {
+        if (status === 'live') wasConnected = true;
+        else if (wasConnected) pause(true);
+      },
+    });
+  }, [subscribe, userId]);
   useEffect(() => { engine.current?.setDifficulty(difficulty); }, [difficulty]);
   useEffect(() => { engine.current?.setReducedMotion(!!reduceMotion); }, [reduceMotion]);
   useEffect(() => { if (snapshot.phase !== 'ready') setHasPlayed(true); }, [snapshot.phase]);
@@ -184,45 +205,6 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
     } catch { setFullscreenError(true); }
   };
 
-  const connect = async () => {
-    if (connecting) return;
-    if (serial.current && (serialStatus === 'live' || serialStatus === 'waiting' || serialStatus === 'stale')) {
-      const previous = serial.current; serial.current = null; pause(true); setSerialStatus('off'); void previous.close(); return;
-    }
-    if (!supportsGripSerial()) { setSerialError(true); return; }
-    setConnecting(true); setSerialError(false);
-    const connection = new GripSerialConnection(frame => {
-      if (!alive.current || serial.current !== connection) return;
-      if (needsNeutral.current) {
-        if (frame.left <= .1 && frame.right <= .1) needsNeutral.current = false;
-        else return;
-      }
-      if (snapshotRef.current.paused) return;
-      for (const side of ['left', 'right'] as const) {
-        const held = serialLatch.current[side] ? frame[side] > .1 : frame[side] >= .18;
-        serialLatch.current[side] = held;
-        if (held) sources.current.set(`serial:${side}`, { side, level: frame[side] }); else sources.current.delete(`serial:${side}`);
-      }
-      // Both sides belong to one frame: swapping hands must not briefly release.
-      updateGripState();
-    }, status => {
-      if (!alive.current || serial.current !== connection) return;
-      setSerialStatus(status);
-      if (status === 'stale' || status === 'disconnected' || status === 'error') {
-        pause(true);
-        if (status !== 'stale') { serial.current = null; setSerialError(true); }
-      }
-    });
-    serial.current = connection; needsNeutral.current = true;
-    try { await connection.connect(); }
-    catch (error) {
-      void connection.close();
-      if (alive.current && serial.current === connection) {
-        serial.current = null; setSerialStatus('off');
-        if (!(error instanceof DOMException && error.name === 'NotFoundError')) setSerialError(true);
-      }
-    } finally { if (alive.current) setConnecting(false); }
-  };
   const toggleSound = async () => {
     if (soundOn) { setSoundOn(false); return; }
     try {
@@ -243,7 +225,7 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
   const lastCatch = snapshot.lastCatch;
   const headline = snapshot.paused ? t('A little pause by the water.', '在水边，歇一小会儿。')
     : hooked ? t(`A ${hooked.en.toLowerCase()} is coming up!`, `${hooked.zh}跟着鱼钩上来啦！`)
-    : snapshot.phase === 'lowering' ? t('Let the hook drift a little deeper.', '鱼钩正在慢慢下沉。')
+    : snapshot.phase === 'lowering' ? snapshot.depth >= 1 ? t('At the bottom. Release to reel in.', '鱼钩到底了，松开即可收钩。') : t('Keep holding to lower the hook.', '继续按住，鱼钩向下。')
     : snapshot.phase === 'reeling' ? t('Coming back through the fish.', '收钩中，看看会遇见哪条鱼。')
     : lastCatch ? t(`You met a ${lastCatch.en.toLowerCase()}.`, `遇见了${lastCatch.zh}。`)
     : snapshot.casts ? t('A quiet cast. There is always another.', '这一竿很安静，下次再遇见。') : t('A small cove, a little time together.', '一小片水湾，和你一起慢慢待着。');
@@ -251,8 +233,9 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
     : snapshot.phase === 'lowering' ? t('Release both sides whenever you want to reel in.', '想收钩时，松开所有握住的按键。')
     : snapshot.phase === 'reeling' ? t('One fish per cast. Let the hook return first.', '每竿带回一条小鱼，等鱼钩回来再下钩。')
     : t('Hold either side to lower · Release both to reel', '握住任一侧下钩 · 全部松开收钩');
-  const statusLabel = serialStatus === 'live' ? t('Grip stream connected', '手柄数据已连接') : serialStatus === 'waiting' ? t('Waiting for grip data', '等待手柄数据') : serialStatus === 'stale' ? t('Grip signal paused', '手柄信号中断') : t('Keyboard / touch ready', '可用键盘／触屏操作');
-  const connected = serialStatus === 'live' || serialStatus === 'waiting' || serialStatus === 'stale';
+  const statusLabel = controllerStatus === 'live' ? t('Controller connected', '手柄已连接')
+    : controllerStatus === 'off' ? t('Connect on the games page', '请在游戏列表连接手柄')
+    : t('Release both sides or check the connection', '请松开两侧或检查连接');
   const discovered = FISH_CATALOG.filter(fish => (saved.collection.counts[fish.id] ?? 0) > 0).length;
 
   const goal = Math.max(5, Math.ceil(snapshot.caught / 5) * 5);
@@ -279,7 +262,7 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
           <button type="button" className="fishing-journal-tool" onClick={() => openPanel('journal')} aria-label={t('Open fish journal', '打开小鱼图鉴')}>{icon('menu_book')}<span>{discovered}/{FISH_CATALOG.length}</span></button>
           <button type="button" onClick={() => void toggleSound()} aria-pressed={soundOn} aria-label={soundOn ? t('Mute catch sounds', '关闭收获音效') : t('Enable catch sounds', '开启收获音效')}>{icon(soundOn ? 'volume_up' : 'volume_off')}</button>
           <button type="button" onClick={() => void toggleFullscreen()} aria-label={fullscreen ? t('Exit fullscreen', '退出全屏') : t('Play fullscreen', '全屏游玩')}>{icon(fullscreen ? 'fullscreen_exit' : 'fullscreen')}</button>
-          <button type="button" className={serialStatus === 'live' ? 'is-connected' : ''} onClick={() => openPanel('settings')} aria-label={t('Game settings and grips', '游戏设置与手柄')}>{icon('tune')}</button>
+          <button type="button" className={controllerStatus === 'live' ? 'is-connected' : ''} onClick={() => openPanel('settings')} aria-label={t('Game settings and grips', '游戏设置与手柄')}>{icon('tune')}</button>
           <button type="button" onClick={() => pause(!snapshot.paused)} aria-label={snapshot.paused ? t('Resume fishing', '继续钓鱼') : t('Pause fishing', '暂停钓鱼')}>{icon(snapshot.paused ? 'play_arrow' : 'pause')}</button>
         </nav>
 
@@ -323,9 +306,9 @@ export default function FishingScreen({ onBack, language }: { onBack: () => void
         {(!saved.available || saveError) && <p className="fishing-warning" role="status">{t('Your journal could not be saved. Session catches still count here; existing browser data has not been overwritten.', '图鉴暂时无法保存。本次收获仍会在页面计数，已有浏览器数据未被覆盖。')}</p>}
       </section> : <div className="fishing-settings">
         <section><h3>{t('Difficulty', '难度')}</h3><div className="fishing-difficulty" role="group" aria-label={t('Difficulty', '难度')}>{difficulties.map(item => <button type="button" key={item.id} disabled={snapshot.phase !== 'ready'} aria-pressed={difficulty === item.id} onClick={() => setDifficulty(item.id)}>{t(item.en, item.zh)}</button>)}</div><p>{t('Change difficulty between casts. Fish move faster at higher levels.', '两竿之间可以切换难度，难度越高，小鱼游得越快。')}</p></section>
-        <section><h3>{t('How to play', '怎么玩')}</h3><p>{t('Hold ← or →, or hold a screen button, to lower the hook. Release both sides to reel in. Catch one fish on the way up. At full depth, the hook returns automatically.', '按住 ← 或 →，或握住屏幕按钮下钩；全部松开后收钩，回收途中可带回一条小鱼。到底后自动收钩。')}</p><div className="fishing-trip-stats"><span>{t('Casts', '本次抛竿')} <b>{snapshot.casts}</b></span><span>{t('Points', '本次点数')} <b>{snapshot.points}</b></span></div></section>
-        <section className="fishing-hardware"><div className="fishing-setting-label"><h3>{t('USB grips', 'USB 手柄')}</h3><span className={serialStatus === 'live' ? 'is-live' : ''}>{statusLabel}</span></div><p>{t('A continuous pressure stream is needed to detect holding and release. Keyboard and touch work without a device.', '手柄需要持续发送压力和松开状态。没有设备时，也可以使用键盘与触屏。')}</p><button type="button" onClick={() => void connect()} disabled={connecting}>{icon(connected ? 'link_off' : 'cable')}{connecting ? t('Connecting…', '连接中……') : connected ? t('Disconnect grips', '断开手柄') : t('Connect USB grips', '连接 USB 手柄')}</button>
-          {(serialError || serialStatus === 'waiting' || serialStatus === 'stale') && <p className="fishing-warning" role="status">{serialStatus === 'waiting' || serialStatus === 'stale' ? t('No continuous pressure stream yet. Use compatible firmware, or disconnect and continue with the keyboard.', '尚未收到持续压力数据。请使用配套固件，或断开后继续用键盘。') : t('Could not connect. Use Chrome or Edge on localhost/HTTPS, close other serial monitors, and check the USB controller firmware.', '暂时无法连接。请在 Chrome／Edge 的 localhost 或 HTTPS 页面使用，关闭其他串口监视器，并检查 USB 手柄固件。')}</p>}
+        <section><h3>{t('How to play', '怎么玩')}</h3><p>{t('Hold GPIO12 / GPIO13, ← / →, or a screen button to lower the hook. Release both sides to reel in and catch a fish. At full depth, the hook waits until you let go.', '长按 GPIO12／GPIO13、←／→ 或屏幕按钮下钩；全部松开后收钩，回收途中可带回一条小鱼。到底后保持，松开后收回。')}</p><div className="fishing-trip-stats"><span>{t('Casts', '本次抛竿')} <b>{snapshot.casts}</b></span><span>{t('Points', '本次点数')} <b>{snapshot.points}</b></span></div></section>
+        <section className="fishing-hardware"><div className="fishing-setting-label"><h3>{t('Game controller', '游戏手柄')}</h3><span className={controllerStatus === 'live' ? 'is-live' : ''}>{statusLabel}</span></div><p>{t('Connect once on the games page. Hold GPIO12 or GPIO13 to lower the hook; release both to reel. Switching games keeps the connection.', '在游戏列表连接一次即可。长按 GPIO12 或 GPIO13 下钩，全部松开收钩；切换游戏时保持连接。')}</p>
+          {controllerStatus !== 'live' && <button type="button" onClick={onBack}>{t('Back to controller connection', '返回游戏列表连接')}</button>}
         </section>
         <section className="fishing-sound-setting"><h3>{t('Catch sounds', '收获音效')}</h3><button type="button" aria-pressed={soundOn} onClick={() => void toggleSound()}>{icon(soundOn ? 'volume_up' : 'volume_off')}{soundOn ? t('On', '已开启') : t('Off', '已关闭')}</button></section>
         {soundError && <p className="fishing-warning" role="status">{t('Sound is unavailable; you can keep playing quietly.', '音效暂时不可用，可以继续安静地玩。')}</p>}

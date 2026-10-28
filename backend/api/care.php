@@ -22,9 +22,7 @@ try {
         $stmt->execute([$userId]);
         $stmt = $pdo->prepare("SELECT p.* FROM {$pets} p JOIN {$members} m ON m.pet_id=p.id WHERE m.user_id=? ORDER BY p.owner_id=?, p.id");
         $stmt->execute([$userId, $userId]);
-        $list = array_map(function ($pet) use ($pdo) {
-            return carePetData($pdo, $pet);
-        }, $stmt->fetchAll());
+        $list = array_map(fn($pet) => carePetData($pdo, $pet), $stmt->fetchAll());
         jsonResponse(['success' => true, 'data' => ['pets' => $list]]);
     }
 

@@ -1,0 +1,19 @@
+.game-controller { flex-shrink: 0; margin: 0 0 22px; padding: 17px 20px; border: 1px solid #d4e4ef; border-radius: 20px; background: #f3f9fd; color: #476982; }
+.game-controller-heading { display: flex; align-items: center; gap: 11px; }
+.game-controller-heading > .app-icon { font-size: 25px; }
+.game-controller h3 { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+.game-controller-heading p, .game-controller-hint { font-size: 11px; line-height: 1.6; color: #6c8599; margin: 0; }
+.game-controller-state { margin-left: auto; font-size: 11px; white-space: nowrap; }
+.game-controller-state.is-live { color: #328273; }
+.game-controller-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 13px 0 9px; }
+.game-controller button, .game-controller select, .game-controller-pairing > input { border: 1px solid #c6dae8; border-radius: 10px; padding: 8px 12px; color: #3e657f; font-size: 12px; background: white; }
+.game-controller-actions > button { background: #dfeef9; cursor: pointer; }
+.game-controller-inputs { display: flex; gap: 7px; font-size: 11px; }
+.game-controller-inputs span { padding: 5px 8px; border-radius: 9px; background: #e6eef5; }
+.game-controller-inputs .is-held { background: #cceee1; color: #27715e; }
+.game-controller-pairing { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.game-controller-pairing > input { flex: 1; min-width: 150px; }
+.game-controller-pairing > input[hidden] { display: none; }
+.game-controller-error { color: #9d5e59; font-size: 11px; margin: 9px 0 0; }
+.game-controller :focus-visible { outline: 2px solid #5589b2; outline-offset: 3px; }
+@media (max-width: 480px) { .game-controller { padding: 13px 14px; } .game-controller-heading { flex-wrap: wrap; } .game-controller-state { margin-left: 0; } }

@@ -25,7 +25,7 @@ function appPasswordHash(string $password): string
 
 function appPasswordVerify(string $password, string $hash): bool
 {
-    return strpos($hash, 'ps1:') === 0
+    return str_starts_with($hash, 'ps1:')
         ? password_verify(base64_encode(hash('sha256', $password, true)), substr($hash, 4))
         : password_verify($password, $hash);
 }
